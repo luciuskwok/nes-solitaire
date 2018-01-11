@@ -20,6 +20,8 @@ extern const unsigned char AttributeDataSize;
 extern const unsigned char CardPlaceholderData[];
 extern const unsigned char CardPlaceholderDataSize;
 
+// Function Prototypes
+void drawTestPattern(void);
 
 // Struct
 typedef struct {
@@ -49,8 +51,7 @@ void initScreen(void) {
 	PPU.vram.address = 0x20;
 	PPU.vram.address = 0x00;
 	for (index16=0; index16<0x1000; ++index16) {
-		//PPU.vram.data = 0x00;
-		PPU.vram.data = index16 * 256;
+		PPU.vram.data = 0x00;
 	}
 
 	// Load the palette
@@ -69,6 +70,7 @@ void initScreen(void) {
 	
 	// Draw screen
 	drawCardPlaceholder();
+	drawTestPattern();
 		
 	// Reset scroll position
 	resetScrollPosition();
@@ -131,6 +133,16 @@ void moveSpriteTo(unsigned char x, unsigned char y) {
 	}
 }
 
-
+// == drawTestPattern() ==
+void drawTestPattern(void) {
+	unsigned char i;
+	
+	PPU.vram.address = 0x20; // Start 6 lines down
+	PPU.vram.address = 0xC0;
+	for (i=0; i<128; ++i) {
+		PPU.vram.data = i;
+	}
+	
+}
 
 

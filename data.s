@@ -27,49 +27,49 @@ _AttributeDataSize:
 _CardPlaceholderData:
 	.word $0000, $0000
 	.repeat 3
-		.byte $17, $18, $19
+		.byte $B7, $B8, $B9
 	.endrepeat
 	.word $0000
-	.byte $17, $18, $19
+	.byte $B7, $B8, $B9
 	.byte $00
 	.repeat 3
-		.byte $17, $18, $19
+		.byte $B7, $B8, $B9
 	.endrepeat
 	.word $0000, $0000
 	
 	.word $0000, $0000
 	.repeat 3
-		.byte $27, $00, $29
+		.byte $C7, $00, $C9
 	.endrepeat
 	.word $0000
-	.byte $27, $26, $29
+	.byte $C7, $C6, $C9
 	.byte $00
 		.repeat 3
-	.byte $27, $00, $29
+	.byte $C7, $00, $C9
 	.endrepeat
 	.word $0000, $0000
 	
 	.word $0000, $0000
 	.repeat 3
-		.byte $27, $00, $29
+		.byte $C7, $00, $C9
 	.endrepeat
 	.word $0000
-	.byte $27, $36, $29
+	.byte $C7, $D6, $C9
 	.byte $00
 	.repeat 3
-		.byte $27, $00, $29
+		.byte $C7, $00, $C9
 	.endrepeat
 	.word $0000, $0000
 	
 	.word $0000, $0000
 	.repeat 3
-		.byte $37, $38, $39
+		.byte $D7, $D8, $D9
 	.endrepeat
 	.word $0000
-	.byte $37, $38, $39
+	.byte $D7, $D8, $D9
 	.byte $00
 	.repeat 3
-		.byte $37, $38, $39
+		.byte $D7, $D8, $D9
 	.endrepeat
 	.word $0000, $0000
 _CardPlaceholderDataSize:
@@ -77,6 +77,6 @@ _CardPlaceholderDataSize:
 
 	
 .segment "FONT"
-;	.incbin  "font.chr"
-	.include "font.inc"
+	.incbin  "font.chr"		; custom font
+;	.include "font.inc"		; font that comes with cc65
 
