@@ -4,12 +4,12 @@
 
 .export _PaletteData, _PaletteDataSize
 _PaletteData:
-	.byte	$0a, $3d, $0f, $30 
+	.byte	$0a, $3d, $0f, $30 		; Background
 	.byte	$0a, $26, $16, $30
 	.byte	$0a, $2a, $1a, $30 
 	.byte	$0a, $31, $01, $30
-	.byte	$0a, $3d, $0f, $30
-	.byte	$00, $00, $00, $01
+	.byte	$0a, $3d, $0f, $30		; Sprite
+	.byte	$0a, $00, $00, $31
 	.byte	$00, $00, $00, $00
 	.byte	$00, $00, $00, $00
 _PaletteDataSize: 

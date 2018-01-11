@@ -29,7 +29,7 @@ void clearCardsBeingMoved(void);
 unsigned char columnHeight(unsigned char col);
 void startNewGame(void);
 void shuffleDeck(void);
-void beep(void);
+void beep(unsigned int noteCode);
 
 // Assembly functions
 unsigned char __fastcall__ readJoypad(void);
@@ -51,7 +51,7 @@ void main (void) {
 	}
 	
 	startNewGame();
-	beep();
+	beep(NoteC5);
 	
 	while (1) {
 		waitvsync();
@@ -67,7 +67,6 @@ void main (void) {
 			
 			if ((joypad & 0x0F) != 0) {
 				// Handle D-pad
-				beep();
 				// Repeat delay is different for initial and subsequent ones.
 				padTimer = padChanged? 20 : 7; 
 		
@@ -82,8 +81,8 @@ void main (void) {
 				cursorY = (cursorY > 1)? cursorY : 1;
 				cursorY = (cursorY < 13)? cursorY : 13;
 				moveCursorToCell(cursorX, cursorY);
-			} else if ((joypad & 0xF0) != 0) {
-				// Handle buttons only if D-pad isn't active
+			} else if ((joypad & 0xF0) != 0 && padChanged) {
+				// Handle buttons only if D-pad isn't active, and with no repeat
 				if ((joypad & JoyStart) != 0) {
 					// Handle menu: Start New Game, Exit to Title.
 				} else if ((joypad & (JoyButtonB | JoyButtonA)) != 0) {
@@ -111,19 +110,13 @@ void handleClick(void) {
 	if (cursorY == 1) { // Top row: only single card selection
 		// todo
 	} else if (cursorY >= 2) { // Tableau 
-		setScreenVisible(0);
-		
 		col = cursorX - 1;
 		row = cursorY - 2;
 		
-		// Debugging
-		drawHexByte (col, 0, 22);
-		drawHexByte (row, 3, 22);
-
 		height = columnHeight(col);
-		if ((row >= height - 1) && (row <= height)) {
+		if ((height - 1 <= row) && (row <= height)) {
 			// Last card in column
-			row = (row > height - 1)? row : height - 1;
+			row = (row < height - 1)? row : (height - 1);
 			clearCardsBeingMoved();
 			index = col * MaxColumnHeight + row;
 			cardsBeingMoved[0] = columnCard[index];
@@ -134,18 +127,28 @@ void handleClick(void) {
 			// Erase bottom half of card that was removed
 			x = 3 * col + ColumnsOffsetX;
 			y = 2 * (row + 1) + ColumnsOffsetY;
+			setScreenVisible(0); // should move drawing to right after vblank
+			drawHexByte(col, 0, 20); // debugging
+			drawHexByte(row, 3, 20); 
+			drawHexByte(height, 6, 20); 
 			eraseRect (x, y, 3, 2);
 			// Redraw the card above the removed card, unless the column is empty.
 			if (row > 0) {
-				--row;
-				y -= 4;
-				index = col * MaxColumnHeight + row;
-				drawCard (columnCard[index], x, y);
+				index = col * MaxColumnHeight + row - 1;
+				drawCard (columnCard[index], x, y - 4);
 			}
+			
+			// Update the card sprite with the card being moved.
+			y = 2 * row + ColumnsOffsetY;
+			setCardSprite(cardsBeingMoved, x * 8, y * 8);
+			resetScrollPosition();
+			setScreenVisible(1);
+			beep(NoteA4);
+		} else {
+			// No valid card to select
+			beep(NoteA3);
 		}
 		
-		resetScrollPosition();
-		setScreenVisible(1);
 	}
 }
 
@@ -228,7 +231,7 @@ void shuffleDeck(void) {
 }
 
 // == beep() ==
-void beep(void) {
+void beep(unsigned int noteCode) {
 	APU.status = 0x0F; // enable pulse, triangle, and noise channels.
 	
 	// time = ( CPU_clock / (16 * frequency) ) - 1
@@ -236,7 +239,7 @@ void beep(void) {
 	// time = 110
 	APU.pulse[0].control = 0x87;
 	APU.pulse[0].ramp = 0x00;
-	APU.pulse[0].period_low = 0x6E;
-	APU.pulse[0].len_period_high = 0x10;
+	APU.pulse[0].period_low = noteCode & 0xFF;
+	APU.pulse[0].len_period_high = 0x10 | ((noteCode >> 8) & 0x07);
 }
 

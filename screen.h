@@ -13,6 +13,8 @@ void setColorAttribute(unsigned char color, unsigned char x, unsigned char y);
 void refreshAttributeTable(void);
 
 void movePointerTo(unsigned char x, unsigned char y);
+void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y);
+unsigned char getCardTilesAndColor (unsigned char card, unsigned char tiles[12]);
 
 void drawCard (unsigned char card, unsigned char x, unsigned char y);
 void drawPlaceholder(unsigned char x, unsigned char y);

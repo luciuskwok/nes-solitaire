@@ -6,10 +6,9 @@
 
 
 // Constants
-const unsigned char MetaSprite_X[] = { 0, 8, 0, 8 };
-const unsigned char MetaSprite_Y[] = { 0, 0, 8, 8 };
-const unsigned char MetaSprite_Tile[] = { 0xEE, 0xEF, 0xFE, 0xFF };
-const unsigned char MetaSprite_Attr[] = { 0, 0, 0, 0 };
+#define PointerSpriteIndex (1)
+#define CardSpriteIndex (5)
+const unsigned char PointerSprite_Tile[] = { 0xEE, 0xEF, 0xFE, 0xFF };
 
 // Global variables
 unsigned char *spriteAreaPtr = (unsigned char *)0x0200;
@@ -139,18 +138,43 @@ void movePointerTo(unsigned char x, unsigned char y) {
 	
 	for (i=0; i<4; ++i) {
 		sprite = (SpriteInfo *)(spriteAreaPtr + 4 * (i + PointerSpriteIndex));
-		sprite->x = MetaSprite_X[i] + x;
-		sprite->y = MetaSprite_Y[i] + y;
-		sprite->tile = MetaSprite_Tile[i];
-		sprite->attributes = MetaSprite_Attr[i];
+		sprite->x = x + (i % 2) * 8;
+		sprite->y = y + (i / 2) * 8;
+		sprite->tile = PointerSprite_Tile[i];
+		sprite->attributes = 0x00;
 	}
 }
 
-// == drawCard() ==
-void drawCard (unsigned char card, unsigned char x, unsigned char y) {
-	unsigned int address = 0x2000 + y * 32 + x;
-	unsigned char tiles[12];
-	unsigned char i = 0;
+// == setCardSprite() ==
+void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
+	unsigned char topCard = cards[0];
+	unsigned char i;
+	unsigned char tile[12];
+	unsigned char color;
+	SpriteInfo *sprite;
+	
+	color = getCardTilesAndColor (topCard, tile);
+	
+	for (i=0; i<12; ++i) { // 3 wide by 4 high
+		sprite = (SpriteInfo *)(spriteAreaPtr + 4 * (i + CardSpriteIndex));
+		sprite->x = x + (i % 3) * 8;
+		sprite->y = y + (i / 3) * 8 - 1;
+		sprite->tile = tile[i];
+		sprite->attributes = 0x01;
+	}
+	
+	// Set sprite color
+	i = color * 4 + 1;
+	PPU.vram.address = 0x3F;
+	PPU.vram.address = 0x15;
+	PPU.vram.data = PaletteData[i];
+	PPU.vram.data = PaletteData[++i];
+	
+}
+
+// == getCardTiles() ==
+unsigned char getCardTilesAndColor (unsigned char card, unsigned char tiles[12]) {
+	// Returns color.
 	unsigned char cardSuit = 0;
 	unsigned char cardValue;
 	unsigned char cardColor;
@@ -166,7 +190,7 @@ void drawCard (unsigned char card, unsigned char x, unsigned char y) {
 		cardColor = 1; 
 		cardValue = 12;
 	}
-	
+
 	tiles[0] = 0xA1 + cardValue;
 	tiles[1] = 0xB2 + cardSuit;
 	tiles[2] = 0xB3;
@@ -182,7 +206,16 @@ void drawCard (unsigned char card, unsigned char x, unsigned char y) {
 	tiles[9] = 0xD1; 
 	tiles[10] = 0xD2; 
 	tiles[11] = 0xD3; 
+
+	return cardColor;	
+}
+
+// == drawCard() ==
+void drawCard (unsigned char card, unsigned char x, unsigned char y) {
+	unsigned char tiles[12];
+	unsigned char cardColor;
 	
+	cardColor = getCardTilesAndColor (card, tiles);
 	placeCardTiles (x, y, tiles, cardColor);
 }
 

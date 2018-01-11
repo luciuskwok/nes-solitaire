@@ -15,9 +15,13 @@
 #define MaxColumnHeight (12)
 #define FirstSpecialCard (27)
 #define FlowerCard (39)
-#define PointerSpriteIndex (1)
-#define CardSpriteIndex (5)
+#define PlaceholderCard (40)
 #define ColumnsOffsetX (4)
 #define ColumnsOffsetY (6)
+
+#define NoteA3 (507)
+#define NoteC4 (427)
+#define NoteA4 (253)
+#define NoteC5 (213)
 
 #endif
