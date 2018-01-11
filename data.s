@@ -16,13 +16,6 @@ _PaletteDataSize:
 	.byte * - _PaletteData
 
 
-.export _AttributeData, _AttributeDataSize
-_AttributeData:
-	.byte	$44, $BB, $44, $BB
-_AttributeDataSize:
-	.byte * - _AttributeData
-
-
 .export _CardPlaceholderData, _CardPlaceholderDataSize
 _CardPlaceholderData:
 	.word $0000, $0000

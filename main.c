@@ -8,6 +8,7 @@ open test.nes
 */
 
 #include <nes.h>
+#include <time.h>
 //#include <peekpoke.h>
 #include "screen.h"
 
@@ -20,15 +21,22 @@ open test.nes
 #define JoySelect (0x20)
 #define JoyButtonB (0x40)
 #define JoyButtonA (0x80)
-
+#define MaxColumnHeight (12)
 
 // Global variables
 unsigned char deck[40];
+unsigned char columns[8 * MaxColumnHeight];
+unsigned char freecell[4];
+unsigned char foundation[3];
 
 // Function prototypes
-unsigned char joypadStatus(void);
 void shuffleDeck(void);
-unsigned char pseudorandom(void);
+void startNewGame(void);
+
+// Assembly functions
+unsigned char __fastcall__ readJoypad(void);
+unsigned char __fastcall__ pseudorandom(void);
+void __fastcall__ seedrandom(unsigned int x);
 
 // == main() ==
 void main (void) {
@@ -38,13 +46,20 @@ void main (void) {
 	
 	initScreen();
 	
+	// Wait for start button
+	while ((joypad & 0xF0) == 0) {
+		joypad = readJoypad();
+	}
+	
+	startNewGame();
+	
 	while (1) {
 		waitvsync();
 		refreshOAM();
 		moveSpriteTo(x, y);
 		
 		// Update joypad and move sprite position. Actual move will happen after next VBL.
-		joypad = joypadStatus();
+		joypad = readJoypad();
 		if ((joypad & JoyLeft) != 0) {
 			--x;
 		}
@@ -60,30 +75,52 @@ void main (void) {
 	}
 }
 
-// == joypadStatus() ==
-unsigned char joypadStatus(void) {
-	unsigned char result = 0;
+// == startNewGame() ==
+void startNewGame(void) {
+	unsigned int seed = clock();
 	unsigned char i;
-	JOYPAD[0] = 1; // Set strobe bit. The joypad buttons will be continuously reloaded, and only the Button A result will be returned.
-	JOYPAD[0] = 0; // Clear strobe bit. This allows all 8 buttons to be read.
-	for (i=0; i<8; ++i) {
-		result = result << 1;
-		result = result | (JOYPAD[0] & 0x01); // Set bit 0 of result to bit 0 of joypad
+	unsigned char card;
+	unsigned char col, row;
+
+	seedrandom(seed);
+	shuffleDeck();
+	
+	// Clear out tableau and cells
+	for (i=0; i<4; ++i) {
+		freecell[i] = 255;
 	}
-	return result;
+	for (i=0; i<3; ++i) {
+		foundation[i] = 255;
+	}
+	for (i=0; i<8 * MaxColumnHeight; ++i) {
+		columns[i] = 255;
+	}
+
+	// Draw entire screen
+	waitvsync();
+	setScreenVisible(0);
+	drawCardPlaceholders();
+
+	// Place and draw cards into columns at the same time.
+	for (i=0; i<40; ++i) {
+		col = i % 8;
+		row = i / 8;
+		card = deck[i];
+		columns[col * MaxColumnHeight + row] = card;
+		drawCard (card, 3 * col + 4, 2 * row + 6);
+	}
+	
+	resetScrollPosition();
+	setScreenVisible(1);
 }
 
 // == shuffleDeck() ==
 void shuffleDeck(void) {
-		// Fisher-Yates shuffle, inside-out method.
+	// Fisher-Yates shuffle, inside-out method.
 	unsigned char i, j;
 	for (i=0; i<40;++i) {
 		j = pseudorandom() % (i + 1);
 		deck[i] = deck[j];
 		deck[j] = i;
 	}
-}
-
-unsigned char pseudorandom(void) {
-	return 1;
 }
