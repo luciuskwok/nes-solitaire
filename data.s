@@ -6,7 +6,7 @@
 _PaletteData:
 	.byte	$0a, $3d, $0f, $30 
 	.byte	$0a, $26, $16, $30
-	.byte	$0a, $3a, $2a, $30 
+	.byte	$0a, $2a, $1a, $30 
 	.byte	$0a, $31, $01, $30
 	.byte	$0a, $3d, $0f, $30
 	.byte	$00, $00, $00, $01

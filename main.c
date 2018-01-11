@@ -11,17 +11,7 @@ open test.nes
 #include <time.h>
 //#include <peekpoke.h>
 #include "screen.h"
-
-// Constants
-#define JoyUp (0x08)
-#define JoyDown (0x04)
-#define JoyLeft (0x02)
-#define JoyRight (0x01)
-#define JoyStart (0x10)
-#define JoySelect (0x20)
-#define JoyButtonB (0x40)
-#define JoyButtonA (0x80)
-#define MaxColumnHeight (12)
+#include "constants.h"
 
 // Global variables
 unsigned char deck[40];
@@ -110,6 +100,7 @@ void startNewGame(void) {
 		drawCard (card, 3 * col + 4, 2 * row + 6);
 	}
 	
+	refreshAttributeTable();
 	resetScrollPosition();
 	setScreenVisible(1);
 }

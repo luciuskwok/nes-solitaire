@@ -8,6 +8,10 @@ void initScreen(void);
 void setScreenVisible(unsigned char on);
 void resetScrollPosition(void);
 void refreshOAM(void);
+
+void setColorAttribute(unsigned char color, unsigned char x, unsigned char y);
+void refreshAttributeTable(void);
+
 void moveSpriteTo(unsigned char x, unsigned char y);
 
 void drawCardPlaceholders(void);

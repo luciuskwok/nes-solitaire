@@ -2,6 +2,8 @@
 
 #include <nes.h>
 #include "screen.h"
+#include "constants.h"
+
 
 // Constants
 const unsigned char MetaSprite_X[] = { 0, 8, 0, 8 };
@@ -11,6 +13,7 @@ const unsigned char MetaSprite_Attr[] = { 0, 0, 0, 0 };
 
 // Global variables
 unsigned char *spriteAreaPtr = (unsigned char *)0x0200;
+unsigned char attributeShadow[64]; // Copy of the attribute table in the nametable for easier modifications.
 
 // Extern
 extern const unsigned char PaletteData[];
@@ -48,6 +51,11 @@ void initScreen(void) {
 	for (index16=0; index16<0x1000; ++index16) {
 		PPU.vram.data = 0x00;
 	}
+	
+	// Clear Attribute shadow table
+	for (index8=0; index8<64; ++index8) {
+		attributeShadow[index8] = 0;
+	}
 
 	// Load the palette
 	PPU.vram.address = 0x3F;
@@ -60,7 +68,8 @@ void initScreen(void) {
 	drawCardPlaceholders();
 	drawString("PRESS START", 10, 11);
 		
-	// Reset scroll position and turn screen on
+	// Finalize and turn screen on
+	refreshAttributeTable();
 	resetScrollPosition();
 	setScreenVisible(1);
 }
@@ -89,6 +98,36 @@ void refreshOAM(void) {
 	PPU.scroll = 0;
 }
 
+// == setColorAttribute() ==
+void setColorAttribute(unsigned char color, unsigned char x, unsigned char y) {
+	unsigned char offset = (x / 4) + 8 * (y / 4);
+	unsigned char h = (x / 2) % 2;
+	unsigned char v = (y / 2) % 2;
+	unsigned char shift = (h + 2 * v) * 2;
+	unsigned char mask = 0x03;
+	unsigned char value;
+	
+	color = (color << shift);
+	mask = (mask << shift);
+	
+	value = attributeShadow[offset];
+	value = value & (~mask);
+	value = value | (color & mask);
+	attributeShadow[offset] = value;
+}
+
+// == refreshAttributeTable() ==
+void refreshAttributeTable(void) {
+	unsigned char i;
+	
+	// Load the palette
+	PPU.vram.address = 0x23;
+	PPU.vram.address = 0xC0;
+	for (i=0; i<64; ++i) {
+		PPU.vram.data = attributeShadow[i];
+	}
+}
+
 // == moveSpriteTo() ==
 void moveSpriteTo(unsigned char x, unsigned char y) {
 	unsigned char i;
@@ -107,11 +146,26 @@ void moveSpriteTo(unsigned char x, unsigned char y) {
 void drawCard (unsigned char card, unsigned char x, unsigned char y) {
 	unsigned int address = 0x2000 + y * 32 + x;
 	unsigned char i = 0;
+	unsigned char cardSuit = 0;
+	unsigned char cardValue;
+	unsigned char cardColor;
+	
+	if (card < FirstSpecialCard) {
+		cardValue = card % 9; // Normal rank cards.
+		cardColor = card / 9;
+		cardSuit = cardColor + 2;  // add 2 because the suits start 2 after the blank tile.
+	} else if (card < FlowerCard) {
+		cardColor = (card - FirstSpecialCard) / 4; // There are 4 of each "color" card.
+		cardValue = 9 + cardColor;
+	} else {
+		cardColor = 1; // Flower card.
+		cardValue = 12;
+	}
 	
 	PPU.vram.address = (address >> 8);
 	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = 0xA1 + card % 9; // handle cards other than numbered ones
-	PPU.vram.data = (card < 27)? (0xB4 + card / 9) : (0xB2); 
+	PPU.vram.data = 0xA1 + cardValue;
+	PPU.vram.data = 0xB2 + cardSuit;
 	PPU.vram.data = 0xB3; 
 	
 	address += 32; // next line
@@ -134,6 +188,13 @@ void drawCard (unsigned char card, unsigned char x, unsigned char y) {
 	PPU.vram.data = 0xD1; 
 	PPU.vram.data = 0xD2; 
 	PPU.vram.data = 0xD3; 
+	
+	// Update the attribute table
+	setColorAttribute(cardColor, x, y);
+	if ((x % 2) == 1) { 
+		// For odd values of x, also set the color attribute of the suit tile, because it falls on a different megatile.
+		setColorAttribute(cardColor, x + 1, y);
+	}
 }
 
 // == drawCardPlaceholders() ==
@@ -148,10 +209,8 @@ void drawCardPlaceholders(void) {
 	}
 	
 	// Set attribute cells
-	PPU.vram.address = 0x23;
-	PPU.vram.address = 0xC0;
 	for (i=0; i<16; ++i) {
-		PPU.vram.data = 0xAA;
+		attributeShadow[i] = 0xAA;
 	}
 }
 
