@@ -15,5 +15,9 @@
 #define MaxColumnHeight (12)
 #define FirstSpecialCard (27)
 #define FlowerCard (39)
+#define PointerSpriteIndex (1)
+#define CardSpriteIndex (5)
+#define ColumnsOffsetX (4)
+#define ColumnsOffsetY (6)
 
 #endif

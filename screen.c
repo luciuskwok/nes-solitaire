@@ -25,7 +25,8 @@ extern const unsigned char PlaceholderRowDataSize;
 
 // Function Prototypes
 void drawTestPattern(void);
-void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles);
+void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles, unsigned char color);
+unsigned char hexChar(unsigned char value);
 
 // Struct
 typedef struct {
@@ -131,13 +132,13 @@ void refreshAttributeTable(void) {
 	}
 }
 
-// == moveSpriteTo() ==
-void moveSpriteTo(unsigned char x, unsigned char y) {
+// == movePointerTo() ==
+void movePointerTo(unsigned char x, unsigned char y) {
 	unsigned char i;
 	SpriteInfo *sprite;
 	
 	for (i=0; i<4; ++i) {
-		sprite = (SpriteInfo *)(spriteAreaPtr + 4 * i);
+		sprite = (SpriteInfo *)(spriteAreaPtr + 4 * (i + PointerSpriteIndex));
 		sprite->x = MetaSprite_X[i] + x;
 		sprite->y = MetaSprite_Y[i] + y;
 		sprite->tile = MetaSprite_Tile[i];
@@ -148,6 +149,7 @@ void moveSpriteTo(unsigned char x, unsigned char y) {
 // == drawCard() ==
 void drawCard (unsigned char card, unsigned char x, unsigned char y) {
 	unsigned int address = 0x2000 + y * 32 + x;
+	unsigned char tiles[12];
 	unsigned char i = 0;
 	unsigned char cardSuit = 0;
 	unsigned char cardValue;
@@ -165,48 +167,32 @@ void drawCard (unsigned char card, unsigned char x, unsigned char y) {
 		cardValue = 12;
 	}
 	
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = 0xA1 + cardValue;
-	PPU.vram.data = 0xB2 + cardSuit;
-	PPU.vram.data = 0xB3; 
+	tiles[0] = 0xA1 + cardValue;
+	tiles[1] = 0xB2 + cardSuit;
+	tiles[2] = 0xB3;
 	
-	address += 32; // next line
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = 0xC1; 
-	PPU.vram.data = 0xC2; 
-	PPU.vram.data = 0xC3; 
+	tiles[3] = 0xC1; 
+	tiles[4] = 0xC2; 
+	tiles[5] = 0xC3; 
 
-	address += 32; // next line
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = 0xC1; 
-	PPU.vram.data = 0xC2; 
-	PPU.vram.data = 0xC3; 
+	tiles[6] = 0xC1; 
+	tiles[7] = 0xC2; 
+	tiles[8] = 0xC3; 
 
-	address += 32; // next line
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = 0xD1; 
-	PPU.vram.data = 0xD2; 
-	PPU.vram.data = 0xD3; 
+	tiles[9] = 0xD1; 
+	tiles[10] = 0xD2; 
+	tiles[11] = 0xD3; 
 	
-	// Update the attribute table
-	setColorAttribute(cardColor, x, y);
-	if ((x % 2) == 1) { 
-		// For odd values of x, also set the color attribute of the suit tile, because it falls on a different megatile.
-		setColorAttribute(cardColor, x + 1, y);
-	}
+	placeCardTiles (x, y, tiles, cardColor);
 }
 
 // == drawPlaceholder() ==
 void drawPlaceholder(unsigned char x, unsigned char y) {
-	placeCardTiles (x, y, PlaceholderTileData);
+	placeCardTiles (x, y, PlaceholderTileData, 2);
 }
 
 // == placeCardTiles() ==
-void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles) {
+void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles, unsigned char color) {
 	unsigned int address = 0x2000 + y * 32 + x;
 
 	PPU.vram.address = (address >> 8);
@@ -235,6 +221,13 @@ void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles
 	PPU.vram.data = *(++tiles); 
 	PPU.vram.data = *(++tiles); 
 	PPU.vram.data = *(++tiles); 
+
+	// Update the attribute table
+	setColorAttribute(color, x, y);
+	if ((x % 2) == 1) { 
+		// For odd values of x, also set the color attribute of the suit tile, because it falls on a different megatile.
+		setColorAttribute(color, x + 1, y);
+	}
 }
 
 // == drawPlaceholderRow() ==
@@ -251,6 +244,21 @@ void drawPlaceholderRow(void) {
 	// Set attribute cells
 	for (i=0; i<16; ++i) {
 		attributeShadow[i] = 0xAA;
+	}
+}
+
+// == eraseRect() ==
+void eraseRect (unsigned char x, unsigned char y, unsigned char width, unsigned char height) {
+	unsigned int address = 0x2000 + y * 32 + x;
+	unsigned char i, j;
+
+	for (i=0; i<height; ++i) {
+		PPU.vram.address = (address >> 8);
+		PPU.vram.address = (address & 0xFF);
+		for (j=0; j<width; ++j) {
+			PPU.vram.data = 0x20; // Use ASCII space character to erase
+		}
+		address += 32; // next line
 	}
 }
 
@@ -305,4 +313,19 @@ void stringWithByte(unsigned char byte, char outString[]) {
 	}
 }
 
+// == drawHexByte() ==
+void drawHexByte (unsigned char byte, unsigned char x, unsigned char y) {
+	unsigned int address = 0x2000 + y * 32 + x;
+	
+	PPU.vram.address = (address >> 8);
+	PPU.vram.address = (address & 0xFF);
+	PPU.vram.data = hexChar(byte >> 4);
+	PPU.vram.data = hexChar(byte);
+}
+
+// == hexChar() ==
+unsigned char hexChar(unsigned char value) {
+	value = value & 0x0F;
+	return (value < 10)? 0x30 + value : 0x37 + value;
+}
 

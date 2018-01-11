@@ -12,14 +12,15 @@ void refreshOAM(void);
 void setColorAttribute(unsigned char color, unsigned char x, unsigned char y);
 void refreshAttributeTable(void);
 
-void moveSpriteTo(unsigned char x, unsigned char y);
+void movePointerTo(unsigned char x, unsigned char y);
 
 void drawCard (unsigned char card, unsigned char x, unsigned char y);
 void drawPlaceholder(unsigned char x, unsigned char y);
 void drawPlaceholderRow(void);
+void eraseRect (unsigned char x, unsigned char y, unsigned char width, unsigned char height);
 
 void drawString(const char *string, unsigned char x, unsigned char y);
 void stringWithByte(unsigned char byte, char outString[]);
-
+void drawHexByte (unsigned char byte, unsigned char x, unsigned char y);
 
 #endif
