@@ -16,8 +16,17 @@ _PaletteDataSize:
 	.byte * - _PaletteData
 
 
-.export _CardPlaceholderData, _CardPlaceholderDataSize
-_CardPlaceholderData:
+.export _PlaceholderTileData, _PlaceholderTileDataSize
+_PlaceholderTileData:
+	.byte $B7, $B8, $B9
+	.byte $C7, $20, $C9
+	.byte $C7, $20, $C9
+	.byte $D7, $D8, $D9
+_PlaceholderTileDataSize:
+	.byte * - _PlaceholderTileData
+
+.export _PlaceholderRowData, _PlaceholderRowDataSize
+_PlaceholderRowData:
 	.word $0000, $0000
 	.repeat 3
 		.byte $B7, $B8, $B9
@@ -32,25 +41,25 @@ _CardPlaceholderData:
 	
 	.word $0000, $0000
 	.repeat 3
-		.byte $C7, $00, $C9
+		.byte $C7, $20, $C9
 	.endrepeat
 	.word $0000
 	.byte $C7, $C6, $C9
 	.byte $00
 		.repeat 3
-	.byte $C7, $00, $C9
+	.byte $C7, $20, $C9
 	.endrepeat
 	.word $0000, $0000
 	
 	.word $0000, $0000
 	.repeat 3
-		.byte $C7, $00, $C9
+		.byte $C7, $20, $C9
 	.endrepeat
 	.word $0000
 	.byte $C7, $D6, $C9
 	.byte $00
 	.repeat 3
-		.byte $C7, $00, $C9
+		.byte $C7, $20, $C9
 	.endrepeat
 	.word $0000, $0000
 	
@@ -65,8 +74,8 @@ _CardPlaceholderData:
 		.byte $D7, $D8, $D9
 	.endrepeat
 	.word $0000, $0000
-_CardPlaceholderDataSize:
-	.byte * - _CardPlaceholderData
+_PlaceholderRowDataSize:
+	.byte * - _PlaceholderRowData
 
 	
 .segment "FONT"

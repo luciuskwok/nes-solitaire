@@ -14,8 +14,9 @@ void refreshAttributeTable(void);
 
 void moveSpriteTo(unsigned char x, unsigned char y);
 
-void drawCardPlaceholders(void);
 void drawCard (unsigned char card, unsigned char x, unsigned char y);
+void drawPlaceholder(unsigned char x, unsigned char y);
+void drawPlaceholderRow(void);
 
 void drawString(const char *string, unsigned char x, unsigned char y);
 void stringWithByte(unsigned char byte, char outString[]);

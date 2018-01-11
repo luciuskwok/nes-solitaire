@@ -18,11 +18,14 @@ unsigned char attributeShadow[64]; // Copy of the attribute table in the nametab
 // Extern
 extern const unsigned char PaletteData[];
 extern const unsigned char PaletteDataSize;
-extern const unsigned char CardPlaceholderData[];
-extern const unsigned char CardPlaceholderDataSize;
+extern const unsigned char PlaceholderTileData[];
+extern const unsigned char PlaceholderTileDataSize;
+extern const unsigned char PlaceholderRowData[];
+extern const unsigned char PlaceholderRowDataSize;
 
 // Function Prototypes
 void drawTestPattern(void);
+void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles);
 
 // Struct
 typedef struct {
@@ -65,7 +68,7 @@ void initScreen(void) {
 	}
 	
 	// Draw screen
-	drawCardPlaceholders();
+	drawPlaceholderRow();
 	drawString("PRESS START", 10, 11);
 		
 	// Finalize and turn screen on
@@ -150,15 +153,15 @@ void drawCard (unsigned char card, unsigned char x, unsigned char y) {
 	unsigned char cardValue;
 	unsigned char cardColor;
 	
-	if (card < FirstSpecialCard) {
-		cardValue = card % 9; // Normal rank cards.
+	if (card < FirstSpecialCard) { // Normal rank cards.
+		cardValue = card % 9; 
 		cardColor = card / 9;
 		cardSuit = cardColor + 2;  // add 2 because the suits start 2 after the blank tile.
-	} else if (card < FlowerCard) {
+	} else if (card < FlowerCard) { // "Color" card
 		cardColor = (card - FirstSpecialCard) / 4; // There are 4 of each "color" card.
 		cardValue = 9 + cardColor;
-	} else {
-		cardColor = 1; // Flower card.
+	} else { // Flower card.
+		cardColor = 1; 
 		cardValue = 12;
 	}
 	
@@ -197,15 +200,52 @@ void drawCard (unsigned char card, unsigned char x, unsigned char y) {
 	}
 }
 
-// == drawCardPlaceholders() ==
-void drawCardPlaceholders(void) {
+// == drawPlaceholder() ==
+void drawPlaceholder(unsigned char x, unsigned char y) {
+	placeCardTiles (x, y, PlaceholderTileData);
+}
+
+// == placeCardTiles() ==
+void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles) {
+	unsigned int address = 0x2000 + y * 32 + x;
+
+	PPU.vram.address = (address >> 8);
+	PPU.vram.address = (address & 0xFF);
+	PPU.vram.data = *tiles;
+	PPU.vram.data = *(++tiles);
+	PPU.vram.data = *(++tiles); 
+	
+	address += 32; // next line
+	PPU.vram.address = (address >> 8);
+	PPU.vram.address = (address & 0xFF);
+	PPU.vram.data = *(++tiles); 
+	PPU.vram.data = *(++tiles); 
+	PPU.vram.data = *(++tiles); 
+
+	address += 32; // next line
+	PPU.vram.address = (address >> 8);
+	PPU.vram.address = (address & 0xFF);
+	PPU.vram.data = *(++tiles); 
+	PPU.vram.data = *(++tiles); 
+	PPU.vram.data = *(++tiles); 
+
+	address += 32; // next line
+	PPU.vram.address = (address >> 8);
+	PPU.vram.address = (address & 0xFF);
+	PPU.vram.data = *(++tiles); 
+	PPU.vram.data = *(++tiles); 
+	PPU.vram.data = *(++tiles); 
+}
+
+// == drawPlaceholderRow() ==
+void drawPlaceholderRow(void) {
 	unsigned char i;
 	
 	// Set nametable cells
 	PPU.vram.address = 0x20; // Start 2 lines down
 	PPU.vram.address = 0x40;
-	for (i=0; i<CardPlaceholderDataSize; ++i) {
-		PPU.vram.data = CardPlaceholderData[i];
+	for (i=0; i<PlaceholderRowDataSize; ++i) {
+		PPU.vram.data = PlaceholderRowData[i];
 	}
 	
 	// Set attribute cells
