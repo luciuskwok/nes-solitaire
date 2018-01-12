@@ -13,6 +13,7 @@ const unsigned char PointerSprite_Tile[] = { 0xEE, 0xEF, 0xFE, 0xFF };
 // Global variables
 unsigned char *spriteAreaPtr = (unsigned char *)0x0200;
 unsigned char attributeShadow[64]; // Copy of the attribute table in the nametable for easier modifications.
+unsigned char attributeTableNeedsUpdate = 0;
 
 // Extern
 extern const unsigned char PaletteData[];
@@ -117,6 +118,8 @@ void setColorAttribute(unsigned char color, unsigned char x, unsigned char y) {
 	value = value & (~mask);
 	value = value | (color & mask);
 	attributeShadow[offset] = value;
+	
+	attributeTableNeedsUpdate = 1;
 }
 
 // == refreshAttributeTable() ==
@@ -129,6 +132,7 @@ void refreshAttributeTable(void) {
 	for (i=0; i<64; ++i) {
 		PPU.vram.data = attributeShadow[i];
 	}
+	attributeTableNeedsUpdate = 0;
 }
 
 // == movePointerTo() ==
@@ -139,27 +143,30 @@ void movePointerTo(unsigned char x, unsigned char y) {
 	for (i=0; i<4; ++i) {
 		sprite = (SpriteInfo *)(spriteAreaPtr + 4 * (i + PointerSpriteIndex));
 		sprite->x = x + (i % 2) * 8;
-		sprite->y = y + (i / 2) * 8;
+		sprite->y = y + (i / 2) * 8 - 1;
 		sprite->tile = PointerSprite_Tile[i];
 		sprite->attributes = 0x00;
 	}
 }
 
 // == setCardSprite() ==
+// The cards parameter may be nil for an empty sprite.
 void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
 	unsigned char topCard = cards[0];
+	unsigned char color = 0;
 	unsigned char i;
 	unsigned char tile[12];
-	unsigned char color;
 	SpriteInfo *sprite;
 	
-	color = getCardTilesAndColor (topCard, tile);
+	if (cards != 0) {
+		color = getCardTilesAndColor (topCard, tile);
+	}
 	
 	for (i=0; i<12; ++i) { // 3 wide by 4 high
 		sprite = (SpriteInfo *)(spriteAreaPtr + 4 * (i + CardSpriteIndex));
 		sprite->x = x + (i % 3) * 8;
 		sprite->y = y + (i / 3) * 8 - 1;
-		sprite->tile = tile[i];
+		sprite->tile = (cards != 0)? tile[i] : 0x20;
 		sprite->attributes = 0x01;
 	}
 	

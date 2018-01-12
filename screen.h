@@ -3,6 +3,9 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+// Globals
+extern unsigned char attributeTableNeedsUpdate;
+
 // Function prototypes
 void initScreen(void);
 void setScreenVisible(unsigned char on);
