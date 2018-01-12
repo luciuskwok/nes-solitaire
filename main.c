@@ -74,7 +74,7 @@ void main (void) {
 			} else {
 				// Reset padTimer when D-pad is released
 				padTimer = 0;
-				if ((joypad & 0xF0) != 0 && padChanged) {
+				if ((joypad & 0xF0) != 0 && padChanged && (autoMoveNextFrame == 0)) {
 					// Handle buttons only if D-pad isn't active, and with no repeat
 					handleButtons (joypad);
 				}

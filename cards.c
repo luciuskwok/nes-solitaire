@@ -324,12 +324,20 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 	if (curY == 1) { // Top row
 		if (moveCount == 1) {
 			if (col < 3) {
-				if (freecellCard[col] > 40) { // Make sure cell is empty
+				bottomCard = freecellCard[col];
+				if (bottomCard > 40) { 
+					// Always allow dropping on an empty freecell
 					validMove = 1;
 					freecellCard[col] = moveCard;
 					cardsBeingMoved[0] = 255;
 					destinationX = curX;
 					destinationY = curY;
+				} else if ((27 <= bottomCard) && (bottomCard < 40) && (27 <= moveCard) && (moveCard < 40)) { 
+					// Handle dropping on "color" card onto another "color" card.
+					if ((bottomCard - 27) / 4 == (moveCard - 27) / 4) { // same color.
+						
+						
+					}
 				}
 			} else if (col >= 5) {
 				bottomCard = foundationCard[col-5];
@@ -374,7 +382,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 		}
 		if (validMove) { // Move cards to column
 			//beep(Note_A4);
-			invalidateCell(destinationX, height + moveCount + 2);
+			invalidateCell(col + 1, height + moveCount + 2);
 			for (i=0; i<moveCount; ++i) {
 				columnCard[col * MaxColumnHeight + height + i] = cardsBeingMoved[i];
 				cardsBeingMoved[i] = 255;
@@ -388,9 +396,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 	if (validMove) { // Animate card sprite
 		animateCardFromOriginTo(destinationX, destinationY);
 		setCardSprite(0, 0, 0); // then remove the sprite
-			
-		// Always auto-move cards after user makes a valid move.
-		autoMoveNextFrame = 1;
+		autoMoveNextFrame = 1; // Always auto-move cards after user makes a valid move.
 	} else {
 		beep(Note_A3);
 	}
