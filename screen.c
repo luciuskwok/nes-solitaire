@@ -9,6 +9,7 @@
 // Constants
 #define PointerSpriteIndex (1)
 #define CardSpriteIndex (5)
+#define AttributeTableAddress (0x2C30)
 const unsigned char PointerSprite_Tile[] = { 0xEE, 0xEF, 0xFE, 0xFF };
 
 // Global variables
@@ -20,8 +21,8 @@ unsigned char debugValue1 = 0, debugValue2 = 0;
 // Extern
 extern const unsigned char PaletteData[];
 extern const unsigned char PaletteDataSize;
+extern const unsigned char FaceDownCardTileData[];
 extern const unsigned char PlaceholderTileData[];
-extern const unsigned char PlaceholderTileDataSize;
 extern const unsigned char PlaceholderRowData[];
 extern const unsigned char PlaceholderRowDataSize;
 
@@ -176,6 +177,11 @@ void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
 	
 	if (cards != 0) {
 		color = getCardTilesAndColor (topCard, tile);
+		if (cards[1] < 40) { // Modify bottom row of tiles to show that more cards are being moved.
+			tile[9] = 0xF1;
+			tile[10] = 0xF2;
+			tile[11] = 0xF3;
+		}
 	}
 	
 	for (i=0; i<12; ++i) { // 3 wide by 4 high
@@ -233,30 +239,36 @@ unsigned char getCardTilesAndColor (unsigned char card, unsigned char tiles[12])
 	if (card < FirstSpecialCard) { // Normal rank cards.
 		cardValue = card % 9; 
 		cardColor = card / 9;
-		cardSuit = cardColor + 2;  // add 2 because the suits start 2 after the blank tile.
+		cardSuit = cardColor + 1;
 	} else if (card < FlowerCard) { // "Color" card
 		cardColor = (card - FirstSpecialCard) / 4; // There are 4 of each "color" card.
 		cardValue = 9 + cardColor;
-	} else { // Flower card.
+	} else { // Flower card or Face-Down card.
 		cardColor = 1; 
 		cardValue = 12;
 	}
-
-	tiles[0] = 0xA1 + cardValue;
-	tiles[1] = 0xB2 + cardSuit;
-	tiles[2] = 0xB3;
 	
-	tiles[3] = 0xC1; 
-	tiles[4] = 0xC2; 
-	tiles[5] = 0xC3; 
+	if (card < FaceDownCard) {
+		tiles[0] = 0xA1 + cardValue;
+		tiles[1] = 0xCA + cardSuit;
+		tiles[2] = 0xC3;
+	
+		tiles[3] = 0xD1; 
+		tiles[4] = 0xD2; 
+		tiles[5] = 0xD3; 
 
-	tiles[6] = 0xC1; 
-	tiles[7] = 0xC2; 
-	tiles[8] = 0xC3; 
+		tiles[6] = 0xD1; 
+		tiles[7] = 0xD2; 
+		tiles[8] = 0xD3; 
 
-	tiles[9] = 0xD1; 
-	tiles[10] = 0xD2; 
-	tiles[11] = 0xD3; 
+		tiles[9] = 0xE1; 
+		tiles[10] = 0xE2; 
+		tiles[11] = 0xE3; 
+	} else {
+		for (cardValue = 0; cardValue < 12; ++cardValue) {
+			tiles[cardValue] = FaceDownCardTileData[cardValue];
+		}
+	}
 
 	return cardColor;	
 }
@@ -279,32 +291,40 @@ void drawPlaceholder(unsigned char x, unsigned char y) {
 void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles, unsigned char color) {
 	unsigned int address = 0x2000 + y * 32 + x;
 
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = *tiles;
-	PPU.vram.data = *(++tiles);
-	PPU.vram.data = *(++tiles); 
+	if (address < AttributeTableAddress) {
+		PPU.vram.address = (address >> 8);
+		PPU.vram.address = (address & 0xFF);
+		PPU.vram.data = *tiles;
+		PPU.vram.data = *(++tiles);
+		PPU.vram.data = *(++tiles); 
+	}
 	
 	address += 32; // next line
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = *(++tiles); 
-	PPU.vram.data = *(++tiles); 
-	PPU.vram.data = *(++tiles); 
+	if (address < AttributeTableAddress) {
+		PPU.vram.address = (address >> 8);
+		PPU.vram.address = (address & 0xFF);
+		PPU.vram.data = *(++tiles); 
+		PPU.vram.data = *(++tiles); 
+		PPU.vram.data = *(++tiles); 
+	}
 
 	address += 32; // next line
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = *(++tiles); 
-	PPU.vram.data = *(++tiles); 
-	PPU.vram.data = *(++tiles); 
+	if (address < AttributeTableAddress) {
+		PPU.vram.address = (address >> 8);
+		PPU.vram.address = (address & 0xFF);
+		PPU.vram.data = *(++tiles); 
+		PPU.vram.data = *(++tiles); 
+		PPU.vram.data = *(++tiles); 
+	}
 
 	address += 32; // next line
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = *(++tiles); 
-	PPU.vram.data = *(++tiles); 
-	PPU.vram.data = *(++tiles); 
+	if (address < AttributeTableAddress) {
+		PPU.vram.address = (address >> 8);
+		PPU.vram.address = (address & 0xFF);
+		PPU.vram.data = *(++tiles); 
+		PPU.vram.data = *(++tiles); 
+		PPU.vram.data = *(++tiles); 
+	}
 
 	// Update the attribute table
 	setColorAttribute(color, x, y);

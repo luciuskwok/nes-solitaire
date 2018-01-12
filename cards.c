@@ -189,7 +189,7 @@ void drawInvalidCells(void) {
 			// Draw card
 			x = (location & 0xFF) / 8;
 			y = (location >> 8) / 8;
-			if (card < 40) {
+			if (card <= 40) {
 				drawCard (card, x, y);
 			} else {
 				if (row == 0) {
@@ -371,7 +371,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 		} else {
 			// Check if cards can be placed on the bottom card of the column.
 			bottomCard = columnCard[col * MaxColumnHeight + height - 1];
-			if ((bottomCard < 27) && (moveCard < 27) && (bottomCard / 9 != moveCard / 9) && ((bottomCard % 9) == (moveCard % 9) + 1) && (height + moveCount < MaxColumnHeight) ) { 
+			if ((bottomCard < 27) && (moveCard < 27) && (bottomCard / 9 != moveCard / 9) && ((bottomCard % 9) == (moveCard % 9) + 1) && (height + moveCount <= MaxColumnHeight) ) { 
 				// Only match rank cards of different suits where the bottom card is one more than the moved card. Also, make sure that the move does not cause a column to exceed its max height.
 				validMove = 1;
 			}
@@ -447,7 +447,7 @@ unsigned char consolidateHonors(unsigned char moveCard, unsigned char curX, unsi
 	for (col=0; col<3; ++col) {
 		x = originX[col];
 		y = originY[col];
-		if ((x != curX) && (y != curY)) {
+		if ((x != curX) || (y != curY)) {
 			// Remove card from screen
 			if (y == 1) { // Freecell
 				freecellCard[x - 1] = 255;

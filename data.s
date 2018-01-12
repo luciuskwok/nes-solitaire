@@ -16,14 +16,19 @@ _PaletteDataSize:
 	.byte * - _PaletteData
 
 
-.export _PlaceholderTileData, _PlaceholderTileDataSize
+.export _FaceDownCardTileData
+_FaceDownCardTileData:
+	.byte $C7, $C8, $C9
+	.byte $D7, $D8, $D9
+	.byte $D7, $D8, $D9
+	.byte $E7, $E8, $E9
+
+.export _PlaceholderTileData
 _PlaceholderTileData:
 	.byte $C4, $C5, $C6
 	.byte $D4, $20, $D6
 	.byte $D4, $20, $D6
 	.byte $E4, $E5, $E6
-_PlaceholderTileDataSize:
-	.byte * - _PlaceholderTileData
 
 .export _PlaceholderRowData, _PlaceholderRowDataSize
 _PlaceholderRowData:
