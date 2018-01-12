@@ -2,6 +2,7 @@
 
 #include <nes.h>
 #include "screen.h"
+#include "cards.h"
 #include "constants.h"
 
 
