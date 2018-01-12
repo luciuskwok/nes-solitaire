@@ -21,6 +21,8 @@ unsigned char invalidCellCount = 0;
 unsigned char autoMoveNextFrame = 0; 
 
 // Function Prototypes
+unsigned char consolidateHonors(unsigned char moveCard, unsigned char curX, unsigned char curY);
+unsigned char isMatchingHonor(unsigned char card1, unsigned char card2);
 void animateCardFromOriginTo(unsigned char curX, unsigned char curY);
 void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toFou);
 void beep(unsigned int noteCode);
@@ -329,34 +331,25 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 					// Always allow dropping on an empty freecell
 					validMove = 1;
 					freecellCard[col] = moveCard;
-					cardsBeingMoved[0] = 255;
-					destinationX = curX;
-					destinationY = curY;
-				} else if ((27 <= bottomCard) && (bottomCard < 40) && (27 <= moveCard) && (moveCard < 40)) { 
-					// Handle dropping on "color" card onto another "color" card.
+				} else if ((27 <= bottomCard) && (bottomCard < 39) && (27 <= moveCard) && (moveCard < 39)) { 
+					// Handle dropping an Honor card onto another Honor card.
 					if ((bottomCard - 27) / 4 == (moveCard - 27) / 4) { // same color.
-						
-						
+						validMove = consolidateHonors(moveCard, curX, curY); 
 					}
 				}
 			} else if (col >= 5) {
 				bottomCard = foundationCard[col-5];
-				if (moveCard < 27) {	// Only rank cards may move to foundation
+				if (moveCard < 27) {	 // Only rank cards may move to foundation
 					if (bottomCard < 40) {
 						if ((moveCard / 9 == bottomCard / 9) && (moveCard == bottomCard + 1)) {
 							validMove = 1; // Only cards in ascending order can go on foundation.
 						}
-					} else {
-						if (moveCard % 9 == 0) { 
-							validMove = 1;// Only rank 1 cards can move to empty foundation.
-						}
+					} else if (moveCard % 9 == 0) { 
+						validMove = 1;// Only rank 1 cards can move to empty foundation.
 					}
 				}
 				if (validMove) {
 					foundationCard[col-5] = moveCard;
-					cardsBeingMoved[0] = 255;
-					destinationX = curX;
-					destinationY = curY;
 				}
 			} else { 
 				// Cannot move to space between cells and foundations.
@@ -365,6 +358,9 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 			}
 		}
 		if (validMove) {
+			cardsBeingMoved[0] = 255;
+			destinationX = curX;
+			destinationY = curY;
 			invalidateCell(destinationX, destinationY);
 		}
 	} else {
@@ -375,7 +371,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 		} else {
 			// Check if cards can be placed on the bottom card of the column.
 			bottomCard = columnCard[col * MaxColumnHeight + height - 1];
-			if ((bottomCard < 27) && (bottomCard / 9 != moveCard / 9) && ((bottomCard % 9) == (moveCard % 9) + 1) && (height + moveCount < MaxColumnHeight) ) { 
+			if ((bottomCard < 27) && (moveCard < 27) && (bottomCard / 9 != moveCard / 9) && ((bottomCard % 9) == (moveCard % 9) + 1) && (height + moveCount < MaxColumnHeight) ) { 
 				// Only match rank cards of different suits where the bottom card is one more than the moved card. Also, make sure that the move does not cause a column to exceed its max height.
 				validMove = 1;
 			}
@@ -394,12 +390,98 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 	}
 	
 	if (validMove) { // Animate card sprite
-		animateCardFromOriginTo(destinationX, destinationY);
+		if (originatingCellX > 0) {
+			animateCardFromOriginTo(destinationX, destinationY);
+		}
 		setCardSprite(0, 0, 0); // then remove the sprite
 		autoMoveNextFrame = 1; // Always auto-move cards after user makes a valid move.
 	} else {
 		beep(Note_A3);
 	}
+}
+
+// == consolidateHonors() ==
+// Check if all the honor cards are available, except for the card being moved, which has already been taken off the screen. Then move the cards one by one to the foundation cell, except for the last one, which will be moved by the calling function.
+unsigned char consolidateHonors(unsigned char moveCard, unsigned char curX, unsigned char curY) {
+	unsigned char foundCount = 0;
+	unsigned char originX[4]; // coordinates for moving the other 3 cards
+	unsigned char originY[4];
+	unsigned char col, colHeight, x, y;
+	
+	// Save originatingCell coordinate to restore for last animation
+	originX[3] = originatingCellX;
+	originY[3] = originatingCellY;
+	
+	// Freecells
+	for (col=0; col<3; ++col) {
+		if (isMatchingHonor(moveCard, freecellCard[col])) {
+			originX[foundCount] = col + 1;
+			originY[foundCount] = 1;
+			++foundCount;
+		}
+	}
+	
+	// Columns
+	for (col=0; col<8; ++col) {
+		colHeight = columnHeight(col);
+		if (colHeight > 0) {
+			if (isMatchingHonor(moveCard, columnCard[col * MaxColumnHeight + colHeight - 1])) {
+				originX[foundCount] = col + 1;
+				originY[foundCount] = colHeight + 1;
+				++foundCount;
+			}
+		}
+	}
+	
+	debugValue1 = foundCount;
+	
+	// return if card count isn't right
+	if (foundCount < 3) {
+		return 0;
+	}
+	
+	// Animate selected card
+	animateCardFromOriginTo(curX, curY);
+	
+	// Animate other 3 cards (skipping the card already at cursor)
+	for (col=0; col<3; ++col) {
+		x = originX[col];
+		y = originY[col];
+		if ((x != curX) && (y != curY)) {
+			// Remove card from screen
+			if (y == 1) { // Freecell
+				freecellCard[x - 1] = 255;
+			} else { // Column
+				columnCard[(x - 1) * MaxColumnHeight + (y - 2)] = 255;
+			}
+			invalidateCell(x, y);
+			if (y > 2) {
+				invalidateCell(x, y - 1); // also redraw the card above the one removed in the column
+			}
+			refreshScreen();
+			
+			originatingCellX = x;
+			originatingCellY = y;
+			animateCardFromOriginTo(curX, curY);
+		}
+	}
+	
+	// Set the freecell to a face-down card
+	freecellCard[curX - 1] = FaceDownCard;
+	
+	// Disable card-move animation on return
+	originatingCellX = 0;
+	
+	return 1; // is a valid move
+}
+
+unsigned char isMatchingHonor(unsigned char card1, unsigned char card2) {
+	if ((27 <= card1) && (card2 < 39) && (27 <= card2) && (card2 < 39)) {
+		card1 = (card1 - 27) / 4;
+		card2 = (card2 - 27) / 4;
+		return (card1 == card2)? 1 : 0;
+	}
+	return 0;
 }
 
 // == returnCardsToOrigin() ==
@@ -512,7 +594,7 @@ void animateCardFromOriginTo(unsigned char curX, unsigned char curY) {
 	unsigned char endY = (endLocation >> 8);
 	
 	//beep(Note_A4);
-	animateCardSprite (startX, startY, endX, endY, 120); // duration=120 for testing, 8 for production.
+	animateCardSprite (startX, startY, endX, endY, 60); // duration=60 for testing, 8 for production.
 }
 
 // == beep() ==

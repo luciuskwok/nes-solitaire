@@ -19,7 +19,6 @@ open test.nes
 unsigned char cursorX = 1;
 unsigned char cursorY= 6;
 unsigned char cursorDidMove = 1;
-unsigned char debugValue1 = 0, debugValue2 = 0;
 
 // Function prototypes
 void handleDPad(unsigned char joypad);

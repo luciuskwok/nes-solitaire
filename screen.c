@@ -15,6 +15,7 @@ const unsigned char PointerSprite_Tile[] = { 0xEE, 0xEF, 0xFE, 0xFF };
 unsigned char *spriteAreaPtr = (unsigned char *)0x0200;
 unsigned char attributeShadow[64]; // Copy of the attribute table in the nametable for easier modifications.
 unsigned char attributeTableNeedsUpdate = 0;
+unsigned char debugValue1 = 0, debugValue2 = 0;
 
 // Extern
 extern const unsigned char PaletteData[];
@@ -83,12 +84,12 @@ void initScreen(void) {
 void refreshScreen(void) {
 	waitvsync();
 	setScreenVisible(0);
-	// Update nametable here to avoid glithces
-	//drawHexByte(debugValue1, 0, 24); // debugging
-	//drawHexByte(debugValue2, 3, 24); 
 	drawInvalidCells(); 
 	if (attributeTableNeedsUpdate != 0) {
 		refreshAttributeTable();
+	} else {
+		drawHexByte(debugValue1, 0, 24); // debugging
+		//drawHexByte(debugValue2, 3, 24); 
 	}
 	refreshOAM(); // also resets scroll position
 }

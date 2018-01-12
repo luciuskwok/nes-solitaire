@@ -18,10 +18,10 @@ _PaletteDataSize:
 
 .export _PlaceholderTileData, _PlaceholderTileDataSize
 _PlaceholderTileData:
-	.byte $B7, $B8, $B9
-	.byte $C7, $20, $C9
-	.byte $C7, $20, $C9
-	.byte $D7, $D8, $D9
+	.byte $C4, $C5, $C6
+	.byte $D4, $20, $D6
+	.byte $D4, $20, $D6
+	.byte $E4, $E5, $E6
 _PlaceholderTileDataSize:
 	.byte * - _PlaceholderTileData
 
@@ -29,49 +29,49 @@ _PlaceholderTileDataSize:
 _PlaceholderRowData:
 	.word $0000, $0000
 	.repeat 3
-		.byte $B7, $B8, $B9
+		.byte $C4, $C5, $C6
 	.endrepeat
 	.word $0000
-	.byte $B7, $B8, $B9
+	.byte $C4, $C5, $C6
 	.byte $00
 	.repeat 3
-		.byte $B7, $B8, $B9
+		.byte $C4, $C5, $C6
 	.endrepeat
 	.word $0000, $0000
 	
 	.word $0000, $0000
 	.repeat 3
-		.byte $C7, $20, $C9
+		.byte $D4, $20, $D6
 	.endrepeat
 	.word $0000
-	.byte $C7, $C6, $C9
+	.byte $D4, $DA, $D6
 	.byte $00
-		.repeat 3
-	.byte $C7, $20, $C9
+	.repeat 3
+		.byte $D4, $20, $D6
 	.endrepeat
 	.word $0000, $0000
 	
 	.word $0000, $0000
 	.repeat 3
-		.byte $C7, $20, $C9
+		.byte $D4, $20, $D6
 	.endrepeat
 	.word $0000
-	.byte $C7, $D6, $C9
+	.byte $D4, $EA, $D6
 	.byte $00
 	.repeat 3
-		.byte $C7, $20, $C9
+		.byte $D4, $20, $D6
 	.endrepeat
 	.word $0000, $0000
 	
 	.word $0000, $0000
 	.repeat 3
-		.byte $D7, $D8, $D9
+		.byte $E4, $E5, $E6
 	.endrepeat
 	.word $0000
-	.byte $D7, $D8, $D9
+	.byte $E4, $E5, $E6
 	.byte $00
 	.repeat 3
-		.byte $D7, $D8, $D9
+		.byte $E4, $E5, $E6
 	.endrepeat
 	.word $0000, $0000
 _PlaceholderRowDataSize:

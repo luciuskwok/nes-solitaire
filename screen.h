@@ -5,6 +5,7 @@
 
 // Globals
 extern unsigned char attributeTableNeedsUpdate;
+extern unsigned char debugValue1, debugValue2;
 
 // Function prototypes
 void initScreen(void);
