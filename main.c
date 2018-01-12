@@ -231,7 +231,7 @@ void pickUpCardsAtCursor(void) {
 				for (index = row; index < colHeight; ++index) {
 					cardsBeingMoved[index - row] = colPtr[index];
 					colPtr[index] = 255;
-					invalidateCell (originatingCellX, index + 2); // erase the area that the old card used
+					invalidateCell (cursorX, index + 2); // erase the area that the old card used
 				}
 				originatingCellX = cursorX; // allows drops back at original location to cancel a move
 				originatingCellY = row + 2;
@@ -283,7 +283,7 @@ void dropCardsAtCursor(void) {
 	if (cursorY == 1) { // Top row
 		if (moveCount == 1) {
 			if (col < 3) {
-				if (freecellCard[col] >= 40) { // Make sure cell is empty
+				if (freecellCard[col] > 40) { // Make sure cell is empty
 					validMove = 1;
 					freecellCard[col] = moveCard;
 					cardsBeingMoved[0] = 255;

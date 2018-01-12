@@ -15,6 +15,7 @@
 #define MaxColumnHeight (12)
 #define FirstSpecialCard (27)
 #define FlowerCard (39)
+#define FaceDownCard (40)
 #define PlaceholderCard (40)
 #define ColumnsOffsetX (4)
 #define ColumnsOffsetY (6)
