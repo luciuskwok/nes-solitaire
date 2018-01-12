@@ -13,9 +13,11 @@ extern unsigned char foundationCard[]; // There are only 3 foundations, but havi
 extern unsigned char originatingCellX, originatingCellY; // used when moving cards
 extern unsigned char invalidCell[]; // for marking where to redraw cards
 extern unsigned char invalidCellCount;
+extern unsigned char autoMoveNextFrame;
 
 // Functions
 void shuffleDeck(void);
+void autoMoveCards(void);
 
 void invalidateCell (unsigned char col, unsigned char row);
 void drawInvalidCells(void);

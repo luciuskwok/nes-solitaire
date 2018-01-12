@@ -20,9 +20,9 @@
 #define ColumnsOffsetX (4)
 #define ColumnsOffsetY (6)
 
-#define NoteA3 (507)
-#define NoteC4 (427)
-#define NoteA4 (253)
-#define NoteC5 (213)
+#define Note_A3 (507)
+#define Note_C4 (427)
+#define Note_A4 (253)
+#define Note_C5 (213)
 
 #endif

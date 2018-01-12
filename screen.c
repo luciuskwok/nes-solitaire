@@ -79,6 +79,20 @@ void initScreen(void) {
 	setScreenVisible(1);
 }
 
+// == refreshScreen() ==
+void refreshScreen(void) {
+	waitvsync();
+	setScreenVisible(0);
+	// Update nametable here to avoid glithces
+	//drawHexByte(debugValue1, 0, 24); // debugging
+	//drawHexByte(debugValue2, 3, 24); 
+	drawInvalidCells(); 
+	if (attributeTableNeedsUpdate != 0) {
+		refreshAttributeTable();
+	}
+	refreshOAM(); // also resets scroll position
+}
+
 // == setScreenVisible() ==
 void setScreenVisible(unsigned char on) {
 	PPU.control = (on != 0)? 0x80 : 0x00; // enable NMI, use nametable 0
@@ -172,12 +186,40 @@ void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
 	}
 	
 	// Set sprite color
-	i = color * 4 + 1;
-	PPU.vram.address = 0x3F;
-	PPU.vram.address = 0x15;
-	PPU.vram.data = PaletteData[i];
-	PPU.vram.data = PaletteData[++i];
+	if (cards != 0) {
+		i = color * 4 + 1;
+		PPU.vram.address = 0x3F;
+		PPU.vram.address = 0x15;
+		PPU.vram.data = PaletteData[i];
+		PPU.vram.data = PaletteData[++i];
+		PPU.vram.data = 0x31; // light blue
+	}
+}
+
+// == animateCardSprite() ==
+void animateCardSprite(unsigned char fromX, unsigned char fromY, unsigned char toX, unsigned char toY, unsigned char duration) {
+	int t = 0;
+	int dx =(int) toX - (int) fromX;
+	int dy = (int) toY - (int) fromY;
+	unsigned char i;
+	int x, y;
+	SpriteInfo *sprite;
 	
+	waitvsync();
+	refreshOAM();
+	
+	while (t <= duration) {
+		x = fromX + (dx * t / (int) duration);
+		y = fromY + (dy * t / (int) duration);
+		for (i=0; i<12; ++i) { // 3 wide by 4 high
+			sprite = (SpriteInfo *)(spriteAreaPtr + 4 * (i + CardSpriteIndex));
+			sprite->x = x + (i % 3) * 8;
+			sprite->y = y + (i / 3) * 8 - 1;
+		}
+		++t;
+		waitvsync();
+		refreshOAM();
+	}
 }
 
 // == getCardTiles() ==

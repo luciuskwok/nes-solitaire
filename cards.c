@@ -18,8 +18,11 @@ unsigned char foundationCard[4]; // There are only 3 foundations, but having 4 a
 unsigned char originatingCellX, originatingCellY; // used when moving cards
 unsigned char invalidCell[MaxInvalidCells]; // for marking where to redraw cards
 unsigned char invalidCellCount = 0;
+unsigned char autoMoveNextFrame = 0; 
 
 // Function Prototypes
+void animateCardFromOriginTo(unsigned char curX, unsigned char curY);
+void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toFou);
 void beep(unsigned int noteCode);
 
 
@@ -33,6 +36,114 @@ void shuffleDeck(void) {
 		deck[j] = i;
 	}
 }
+
+
+// == autoMoveCards() ==
+void autoMoveCards(void) {
+	unsigned char highLimit = 255;
+	unsigned char searchCard, card;
+	unsigned char col, colHeight, fou;
+
+	// Find the lowest card in the foundations
+	for (fou=0; fou<3; ++fou) {
+		card = foundationCard[fou];
+		if (card >= 40) {
+			card =0;
+		} else {
+			card = card % 9;
+		}
+		highLimit = (card < highLimit)? card : highLimit;
+	}
+	++highLimit; // Set highLimit to one more than the lowest card found.
+	
+	// Compare the foundation card to each card in freecells and columns
+	for (fou=0; fou<3; ++fou) {
+		searchCard = foundationCard[fou];
+		if (searchCard < 40) {
+			if (searchCard % 9 != 8) { // For valid cards that are not the "9" card, set searchCard to the card we're looking for.
+				++searchCard;
+			}
+		} else { // For empty foundations, look for the "1" card of the matching suit in order.
+			searchCard = fou * 9;
+		}
+		
+		if ((searchCard % 9) <= highLimit) {
+			// Check the freecells
+			for (col=0; col<3; ++col) {
+				card = freecellCard[col];
+				if (card < 40) {
+					if (card == FlowerCard) {
+						autoMoveCardFromColumnToFoundation(col + 8, 3);
+						autoMoveNextFrame = 1;
+					} else if (card == searchCard) {
+						autoMoveCardFromColumnToFoundation(col + 8, fou);
+						autoMoveNextFrame = 1;
+					}
+				}
+			}
+		
+			// Check the tableau columns
+			for (col=0; col<8; ++col) {
+				colHeight = columnHeight(col);
+				if (colHeight > 0) {
+					card = columnCard[col * MaxColumnHeight + colHeight - 1];
+					if (card == FlowerCard) {
+						autoMoveCardFromColumnToFoundation(col, 3);
+						autoMoveNextFrame = 1;
+					} else if (card == searchCard) {
+						autoMoveCardFromColumnToFoundation(col, fou);
+						autoMoveNextFrame = 1;
+					}
+				}
+			}
+			
+		} // end if (searchCard...)
+		
+	} // end for (fou...)
+}
+
+
+// == autoMoveCardToFoundation() ==
+// fromCol: 0 to 7 for tableau columns, 8 to 10 for freecells
+// toFou: 0 to 2 for foundations, and 3 for flower card
+void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toFou) {
+	unsigned char moveCard;
+	unsigned char colHeight, index;
+	
+	if (fromCol < 8) {
+		colHeight = columnHeight(fromCol);
+		index = fromCol * MaxColumnHeight + colHeight - 1;
+		moveCard = columnCard[index];
+		columnCard[index] = 255;
+		invalidateCell(fromCol + 1, colHeight + 1);
+		invalidateCell(fromCol + 1, colHeight);
+		originatingCellX = fromCol + 1;
+		originatingCellY = colHeight + 1;
+	} else {
+		index = fromCol - 8;
+		moveCard = freecellCard[index];
+		freecellCard[index] = 255;
+		invalidateCell(index + 1, 1);
+		originatingCellX = index + 1;
+		originatingCellY = 1;
+	}
+	
+	// Redraw screen to remove card being moved
+	refreshScreen();
+
+	// Animate card being moved
+	cardsBeingMoved[0] = moveCard;
+	cardsBeingMoved[1] = 255;
+	setCardSprite(cardsBeingMoved, 0, 0);
+	animateCardFromOriginTo(toFou + 6, 1);
+	cardsBeingMoved[0] = 255;
+	setCardSprite(0, 0, 0);
+
+	// Place card at destination after animation finishes. 
+	foundationCard[toFou] = moveCard;
+	invalidateCell(toFou + 6, 1);
+}
+
 
 // == invalidateCell() ==
 void invalidateCell (unsigned char col, unsigned char row) {
@@ -64,8 +175,10 @@ void drawInvalidCells(void) {
 			if (row == 0) {
 				if (col < 3) {
 					card = freecellCard[col];
-				} else if (col >= 5) {
+				} else if (5 <= col && col < 8) {
 					card = foundationCard[col - 5];
+				}  else if (col == 8) { // Flower card
+					card = foundationCard[3];
 				}
 			} else {
 				card = columnCard[col * MaxColumnHeight + row - 1];
@@ -93,7 +206,11 @@ unsigned int locationWithCell(unsigned char x, unsigned char y) {
 	if (y > 1) {
 		++y;
 	}
-	x = x * 24 + 8;
+	if (x == 9 && y == 1) {
+		x = 120;
+	} else {
+		x = x * 24 + 8;
+	}
 	y = y * 16;
 	return x | y << 8;
 }
@@ -170,14 +287,14 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 	}
 	
 	if (validCard) {
-		beep(NoteA4);
+		//beep(Note_A4);
 		
 		// Update the card sprite with the card being moved.
 		setCardSprite(cardsBeingMoved, cardLocation & 0xFF, cardLocation >> 8);
 		resetScrollPosition();
 	} else {
 		// No valid card to select
-		beep(NoteA3);
+		beep(Note_A3);
 	}
 }
 
@@ -189,6 +306,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 	unsigned char isCancellingMove = 0;
 	unsigned char moveCard = cardsBeingMoved[0];
 	unsigned char height, bottomCard, i;
+	unsigned char destinationX, destinationY;
 	
 	// Handle drop on originating cell as a cancel
 	if (curX == originatingCellX) {
@@ -210,7 +328,8 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 					validMove = 1;
 					freecellCard[col] = moveCard;
 					cardsBeingMoved[0] = 255;
-					invalidateCell(curX, curY);
+					destinationX = curX;
+					destinationY = curY;
 				}
 			} else if (col >= 5) {
 				bottomCard = foundationCard[col-5];
@@ -228,13 +347,17 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 				if (validMove) {
 					foundationCard[col-5] = moveCard;
 					cardsBeingMoved[0] = 255;
-					invalidateCell(curX, curY);
+					destinationX = curX;
+					destinationY = curY;
 				}
 			} else { 
 				// Cannot move to space between cells and foundations.
 				// The flower card should move to its place automatically.
 				validMove = 0;
 			}
+		}
+		if (validMove) {
+			invalidateCell(destinationX, destinationY);
 		}
 	} else {
 		// Dropping cards anywhere in a column will be interpreted as dropping them on the bottom-most card.
@@ -250,19 +373,26 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 			}
 		}
 		if (validMove) { // Move cards to column
-			beep(NoteA4);
+			//beep(Note_A4);
+			invalidateCell(destinationX, height + moveCount + 2);
 			for (i=0; i<moveCount; ++i) {
 				columnCard[col * MaxColumnHeight + height + i] = cardsBeingMoved[i];
 				cardsBeingMoved[i] = 255;
 				invalidateCell(col + 1, height + i + 2);
 			}
+			destinationX = col + 1;
+			destinationY = height + 2;
 		}
 	}
 	
-	if (validMove) { // Remove card sprite
-		setCardSprite(0, 0, 0);
+	if (validMove) { // Animate card sprite
+		animateCardFromOriginTo(destinationX, destinationY);
+		setCardSprite(0, 0, 0); // then remove the sprite
+			
+		// Always auto-move cards after user makes a valid move.
+		autoMoveNextFrame = 1;
 	} else {
-		beep(NoteA3);
+		beep(Note_A3);
 	}
 }
 
@@ -363,6 +493,20 @@ unsigned char topMovableRowAtColumn(unsigned char col) {
 		lowerCard = card;
 	}
 	return 0;
+}
+
+
+// == animateCardFromOriginTo() ==
+void animateCardFromOriginTo(unsigned char curX, unsigned char curY) {
+	unsigned int startLocation = locationWithCell(originatingCellX, originatingCellY);
+	unsigned int endLocation = locationWithCell(curX, curY);
+	unsigned char startX = (startLocation & 0xFF);
+	unsigned char startY = (startLocation >> 8);
+	unsigned char endX = (endLocation & 0xFF);
+	unsigned char endY = (endLocation >> 8);
+	
+	//beep(Note_A4);
+	animateCardSprite (startX, startY, endX, endY, 120); // duration=120 for testing, 8 for production.
 }
 
 // == beep() ==

@@ -8,6 +8,8 @@ extern unsigned char attributeTableNeedsUpdate;
 
 // Function prototypes
 void initScreen(void);
+void refreshScreen(void);
+
 void setScreenVisible(unsigned char on);
 void resetScrollPosition(void);
 void refreshOAM(void);
@@ -17,6 +19,7 @@ void refreshAttributeTable(void);
 
 void movePointerTo(unsigned char x, unsigned char y);
 void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y);
+void animateCardSprite(unsigned char fromX, unsigned char fromY, unsigned char toX, unsigned char toY, unsigned char duration);
 unsigned char getCardTilesAndColor (unsigned char card, unsigned char tiles[12]);
 
 void drawCard (unsigned char card, unsigned char x, unsigned char y);

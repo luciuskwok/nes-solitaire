@@ -44,22 +44,19 @@ void main (void) {
 	}
 	
 	startNewGame();
+	autoMoveNextFrame  = 1;
 	
 	while (1) {
-		waitvsync();
-		setScreenVisible(0);
-		// Update nametable here to avoid glithces
-		//drawHexByte(debugValue1, 0, 24); // debugging
-		//drawHexByte(debugValue2, 3, 24); 
-		drawInvalidCells(); 
-		if (attributeTableNeedsUpdate != 0) {
-			refreshAttributeTable();
-		}
-		refreshOAM(); // also resets scroll position
+		refreshScreen();
 		
-		if (cursorDidMove != 0) {
-			moveCursorToCell(cursorX, cursorY);
+		if (cursorDidMove) {
 			cursorDidMove = 0;
+			moveCursorToCell(cursorX, cursorY);
+		}
+		
+		if (autoMoveNextFrame) {
+			autoMoveNextFrame = 0;
+			autoMoveCards();
 		}
 		
 		// Update joypad and move sprite position. Actual move will happen after next VBL.
@@ -110,6 +107,7 @@ void handleButtons(unsigned char joypad) {
 		// Handle menu: Start New Game, Exit to Title.
 		// todo: show menu instead of just starting over
 		startNewGame();
+		autoMoveNextFrame = 1;
 	} else if ((joypad & JoySelect) != 0) {
 		// Cancel card movement.
 		returnCardsToOrigin();
