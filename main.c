@@ -17,17 +17,19 @@ open test.nes
 #define MaxInvalidCells (32)
 
 // Global variables
+unsigned char invalidCellCount = 0;
+unsigned char cursorX = 1;
+unsigned char cursorY= 6;
+unsigned char cursorDidMove = 1;
+unsigned char debugValue1 = 0, debugValue2 = 0;
+
 unsigned char deck[40];
 unsigned char cardsBeingMoved[MaxColumnHeight];
 unsigned char columnCard[8 * MaxColumnHeight];
 unsigned char freecellCard[4];
 unsigned char foundationCard[4]; // There are only 3 foundations, but having 4 allocated makes some programming easier.
 unsigned char invalidCell[MaxInvalidCells]; // for marking where to redraw cards
-unsigned char invalidCellCount = 0;
-unsigned char cursorX = 1;
-unsigned char cursorY= 6;
 unsigned char originatingCellX, originatingCellY; // used when moving cards
-unsigned char cursorDidMove = 1;
 
 // Function prototypes
 unsigned int locationWithCell(unsigned char x, unsigned char y);
@@ -42,6 +44,7 @@ void returnCardsToOrigin(void);
 void clearCardsBeingMoved(void);
 unsigned char numberOfCardsBeingMoved(void);
 unsigned char columnHeight(unsigned char col);
+unsigned char topMovableRowAtColumn(unsigned char col);
 
 void invalidateCell (unsigned char col, unsigned char row);
 void drawInvalidCells(void);
@@ -75,8 +78,8 @@ void main (void) {
 		waitvsync();
 		setScreenVisible(0);
 		// Update nametable here to avoid glithces
-		//drawHexByte(cursorX, 0, 24); // debugging
-		//drawHexByte(cursorY, 3, 24); 
+		//drawHexByte(debugValue1, 0, 24); // debugging
+		//drawHexByte(debugValue2, 3, 24); 
 		drawInvalidCells(); 
 		if (attributeTableNeedsUpdate != 0) {
 			refreshAttributeTable();
@@ -201,13 +204,16 @@ void pickUpCardsAtCursor(void) {
 	unsigned char validCard = 0;
 	unsigned char index;
 	unsigned int cardLocation;
-	unsigned char height;
+	unsigned char colHeight;
+	unsigned char topMovableRow;
+	unsigned char *colPtr;
 
 	clearCardsBeingMoved();
 	
 	if (cursorY == 1) { // Top row: only single card selection
-		if (col < 3) { // Can only pick up cards from freecells, not from foundations.
+		if ((col < 3) && (freecellCard[col] < 40)) { // Can only pick up cards from freecells, not from foundations, and only if a card is there.
 			cardsBeingMoved[0] = freecellCard[col];
+			freecellCard[col] = 255;
 			cardLocation = locationWithCell(cursorX, cursorY);
 			originatingCellX = cursorX;
 			originatingCellY = cursorY;
@@ -215,22 +221,27 @@ void pickUpCardsAtCursor(void) {
 			validCard = 1;
 		}
 	} else if (cursorY >= 2) { // Tableau 
-		height = columnHeight(col);
-		// This code only allows picking up the bottom-most card in a column. In the real game, stacks of cards may be picked up if they are in the correct order.
-		if (row == height - 1) {
-			// Last card in column
-			// Move card from column to cards being moved
-			index = col * MaxColumnHeight + row;
-			cardsBeingMoved[0] = columnCard[index];
-			columnCard[index] = 255;
-			cardLocation = locationWithCell(cursorX, row + 2);
-			originatingCellX = cursorX; // allows drops back at original location to cancel a move
-			originatingCellY = row + 2;
+		colHeight = columnHeight(col);
+		if (colHeight > 0) {
+			topMovableRow = topMovableRowAtColumn(col);
 			
-			// Invalidate both the card being picked up and the one above it, to make sure the whole card is updated.
-			invalidateCell(col + 1, row + 2); // make sure to draw the empty cell first
-			invalidateCell(col + 1, row + 1); // draw the card left behind
-			validCard = 1;
+			if (topMovableRow <= row && row < colHeight) {
+				// Move card from column to cards being moved
+				colPtr = columnCard + col * MaxColumnHeight;
+				for (index = row; index < colHeight; ++index) {
+					cardsBeingMoved[index - row] = colPtr[index];
+					colPtr[index] = 255;
+					invalidateCell (originatingCellX, index + 2); // erase the area that the old card used
+				}
+				originatingCellX = cursorX; // allows drops back at original location to cancel a move
+				originatingCellY = row + 2;
+				cardLocation = locationWithCell(originatingCellX, originatingCellY);
+			
+				if (row > 0) { // Redraw the card left behind, if any
+					invalidateCell(originatingCellX, originatingCellY - 1); 
+				}
+				validCard = 1;
+			}
 		}
 		
 	}
@@ -252,10 +263,22 @@ void dropCardsAtCursor(void) {
 	unsigned char moveCount = numberOfCardsBeingMoved();
 	unsigned char col = cursorX - 1;
 	unsigned char validMove = 0;
+	unsigned char isCancellingMove = 0;
 	unsigned char moveCard = cardsBeingMoved[0];
 	unsigned char height, bottomCard, i;
 	
-	// todo: handle cancel in case of drop back at originating cell
+	// Handle drop on originating cell as a cancel
+	if (cursorX == originatingCellX) {
+		if ((cursorY == 1) && (originatingCellY == 1)) {
+			isCancellingMove = 1;
+		} else if ((cursorY > 1) && (originatingCellY > 1)) {
+			isCancellingMove = 1; // Handle drops anywhere in the originating cell as a cancel
+		}
+		if (isCancellingMove) {
+			returnCardsToOrigin();
+			return;
+		}
+	}
 	
 	if (cursorY == 1) { // Top row
 		if (moveCount == 1) {
@@ -329,8 +352,6 @@ void returnCardsToOrigin(void) {
 	if (cardsBeingMoved[0] >= 40) {
 		return;
 	}
-	
-	beep(NoteA3);
 
 	// originatingCellX and Y use 1,1 as the top left coordinate.
 	if (originatingCellY == 1) {
@@ -393,6 +414,32 @@ unsigned char columnHeight(unsigned char col) {
 		}
 	}
 	return result;
+}
+
+// == topMovableRowAtColumn() ==
+unsigned char topMovableRowAtColumn(unsigned char col) {
+	unsigned char *colPtr = columnCard + col * MaxColumnHeight;
+	signed char row = MaxColumnHeight - 1;
+	unsigned char lowerCard = 255;
+	unsigned char card;
+	
+	while (row > 0) {
+		card = colPtr[row];
+		if ((card < 40) && (lowerCard < 40)) {
+			if ((card >= 27) || (lowerCard >= 27)) {
+				return row + 1; // Non-rank cards are not a valid sequence
+			}
+			if (card / 9 == lowerCard / 9) {
+				return row + 1; // Matching suits are not a valid sequence
+			}
+			if ((card % 9) != (lowerCard % 9) + 1) {
+				return row + 1;
+			}
+		}
+		--row;
+		lowerCard = card;
+	}
+	return 0;
 }
 
 // == invalidateCell() ==
@@ -489,6 +536,9 @@ void startNewGame(void) {
 		columnCard[col * MaxColumnHeight + row] = card;
 		drawCard (card, 3 * col + ColumnsOffsetX, 2 * row + ColumnsOffsetY);
 	}
+	
+	// Erase rows below columns
+	eraseRect(4, 18, 24, 10);
 	
 	refreshAttributeTable();
 	setCardSprite(0, 0, 0);
