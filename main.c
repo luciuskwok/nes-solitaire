@@ -38,6 +38,7 @@ void handleDPad(unsigned char joypad);
 void handleButtons(unsigned char joypad);
 void pickUpCardsAtCursor(void);
 void dropCardsAtCursor(void);
+void returnCardsToOrigin(void);
 void clearCardsBeingMoved(void);
 unsigned char numberOfCardsBeingMoved(void);
 unsigned char columnHeight(unsigned char col);
@@ -99,9 +100,13 @@ void main (void) {
 				// Repeat delay is different for initial and subsequent ones.
 				padTimer = padChanged? 20 : 7; 
 				handleDPad (joypad);
-			} else if ((joypad & 0xF0) != 0 && padChanged) {
-				// Handle buttons only if D-pad isn't active, and with no repeat
-				handleButtons (joypad);
+			} else {
+				// Reset padTimer when D-pad is released
+				padTimer = 0;
+				if ((joypad & 0xF0) != 0 && padChanged) {
+					// Handle buttons only if D-pad isn't active, and with no repeat
+					handleButtons (joypad);
+				}
 			}
 		}
 		if (padTimer != 0) {
@@ -172,6 +177,11 @@ void handleDPad(unsigned char joypad) {
 void handleButtons(unsigned char joypad) {
 	if ((joypad & JoyStart) != 0) {
 		// Handle menu: Start New Game, Exit to Title.
+		// todo: show menu instead of just starting over
+		startNewGame();
+	} else if ((joypad & JoySelect) != 0) {
+		// Cancel card movement.
+		returnCardsToOrigin();
 	} else if ((joypad & (JoyButtonB | JoyButtonA)) != 0) {
 		// Handle A and B buttons the same.
 		if (cardsBeingMoved[0] >= 40) {
@@ -288,24 +298,61 @@ void dropCardsAtCursor(void) {
 		} else {
 			// Check if cards can be placed on the bottom card of the column.
 			bottomCard = columnCard[col * MaxColumnHeight + height - 1];
-			if ((bottomCard < 27) && (bottomCard / 3 != moveCard / 3) && (bottomCard == moveCard + 1) && (height + moveCount < MaxColumnHeight) ) { 
+			if ((bottomCard < 27) && (bottomCard / 9 != moveCard / 9) && ((bottomCard % 9) == (moveCard % 9) + 1) && (height + moveCount < MaxColumnHeight) ) { 
 				// Only match rank cards of different suits where the bottom card is one more than the moved card. Also, make sure that the move does not cause a column to exceed its max height.
 				validMove = 1;
-				for (i=0; i<moveCount; ++i) {
-					columnCard[col * MaxColumnHeight + height + i] = cardsBeingMoved[i];
-					cardsBeingMoved[i] = 255;
-					invalidateCell(col + 1, height + i + 2);
-				}
+			}
+		}
+		if (validMove) { // Move cards to column
+			beep(NoteA4);
+			for (i=0; i<moveCount; ++i) {
+				columnCard[col * MaxColumnHeight + height + i] = cardsBeingMoved[i];
+				cardsBeingMoved[i] = 255;
+				invalidateCell(col + 1, height + i + 2);
 			}
 		}
 	}
 	
-	if (validMove != 0) {
-		// Remove card sprite
+	if (validMove) { // Remove card sprite
 		setCardSprite(0, 0, 0);
 	} else {
 		beep(NoteA3);
 	}
+}
+
+// == returnCardsToOrigin() ==
+void returnCardsToOrigin(void) {
+	unsigned char col = originatingCellX - 1;
+	unsigned char row = originatingCellY - 2;
+	unsigned char i;
+	
+	if (cardsBeingMoved[0] >= 40) {
+		return;
+	}
+	
+	beep(NoteA3);
+
+	// originatingCellX and Y use 1,1 as the top left coordinate.
+	if (originatingCellY == 1) {
+		// Only the 3 freecells are valid origins
+		if (originatingCellX <= 3) {
+			// Should be only one card being moved.
+			freecellCard[originatingCellX - 1] = cardsBeingMoved[0];
+			cardsBeingMoved[0] = 255;
+			invalidateCell(originatingCellX, originatingCellY);
+		}
+	} else if (originatingCellY > 1) {
+		i = 0;
+		while (cardsBeingMoved[i] < 40 && i < MaxColumnHeight) {
+			columnCard[col * MaxColumnHeight + row + i] = cardsBeingMoved[i];
+			cardsBeingMoved[i] = 255;
+			invalidateCell(originatingCellX, originatingCellY + i);
+			++i;
+		}
+	}
+	
+	// Remove card sprite
+	setCardSprite(0, 0, 0);
 }
 
 // == clearCardsBeingMoved() ==
@@ -444,7 +491,9 @@ void startNewGame(void) {
 	}
 	
 	refreshAttributeTable();
+	setCardSprite(0, 0, 0);
 	resetScrollPosition();
+	waitvsync();
 	setScreenVisible(1);
 }
 
