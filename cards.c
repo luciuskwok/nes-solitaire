@@ -507,13 +507,10 @@ void animateCardFromOriginTo(unsigned char curX, unsigned char curY) {
 }
 
 // == drawCardAtCell() ==
-void drawCardAtCell(unsigned char card, unsigned char row, unsigned char col) {
-	unsigned int location = locationWithCell(row, col);
-	unsigned char x = (location & 0x00FF) / 8;
+void drawCardAtCell(unsigned char card, unsigned char col, unsigned char row) {
+	unsigned int location = locationWithCell(col, row);
+	unsigned char x = (location & 0x00FF) >> 3;
 	unsigned char y = (location & 0xFF00) >> 11;
-	
-	drawHexByte (x, 0, 29);
-	drawHexByte (y, 3, 29);
 	
 	if (card <= 40) {
 		drawCard (card, x, y);
@@ -531,7 +528,7 @@ void drawCardAtCell(unsigned char card, unsigned char row, unsigned char col) {
 void drawColumnBottom(unsigned char col, unsigned char blankRows) {
 	unsigned char colHeight = columnHeight(col);
 	unsigned char cellX = col + 1;
-	unsigned char cellY = colHeight + 1;
+	unsigned char cellY = (colHeight > 0)? colHeight + 1 : 2;
 	unsigned char card = 255;
 	unsigned int location = locationWithCell(cellX, cellY);
 	unsigned char tileX = (location & 0x00FF) / 8;
@@ -540,10 +537,13 @@ void drawColumnBottom(unsigned char col, unsigned char blankRows) {
 	
 	if (colHeight > 0) {
 		card = columnCard[col * MaxColumnHeight + colHeight - 1];
+		drawCardAtCell (card, cellX, cellY);
+		tileY += 4;
+	} else {
+		eraseHalfCardArea(tileX, tileY);
+		tileY += 2;
 	}
-	drawCardAtCell (card, cellX, cellY);
 
-	tileY += 4;
 	for (i=0; i<blankRows; ++i) {
 		eraseHalfCardArea(tileX, tileY);
 		tileY += 2;

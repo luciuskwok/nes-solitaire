@@ -4,7 +4,6 @@
 #define SCREEN_H
 
 // Globals
-extern unsigned char attributeTableNeedsUpdate;
 extern unsigned char debugValue1, debugValue2;
 
 // Function prototypes

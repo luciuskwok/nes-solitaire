@@ -9,7 +9,7 @@
 // Constants
 #define PointerSpriteIndex (1)
 #define CardSpriteIndex (5)
-#define AttributeTableAddress (0x2C30)
+#define AttributeTableAddress (0x23C0)
 const unsigned char PointerSprite_Tile[] = { 0xEE, 0xEF, 0xFE, 0xFF };
 
 // Global variables
@@ -86,9 +86,12 @@ void initScreen(void) {
 void refreshScreen(void) {
 	waitvsync();
 	setScreenVisible(0);
+	
 	if (vramUpdateIndex > 0) {
-		updateVram();
+		//drawHexByte (vramUpdateIndex, 0, 29); // debugging
 	}
+
+	updateVram();
 	refreshOAM(); // also resets scroll position
 }
 
@@ -262,8 +265,8 @@ unsigned char getCardTilesAndColor (unsigned char card, unsigned char tiles[12])
 		cardValue = card % 9; 
 		cardColor = card / 9;
 		cardSuit = cardColor + 1;
-	} else if (card < FlowerCard) { // "Color" card
-		cardColor = (card - FirstSpecialCard) / 4; // There are 4 of each "color" card.
+	} else if (card < FlowerCard) { // "Honor" card
+		cardColor = (card - FirstSpecialCard) / 4; // There are 4 of each "Honor" card.
 		cardValue = 9 + cardColor;
 	} else { // Flower card or Face-Down card.
 		cardColor = 1; 

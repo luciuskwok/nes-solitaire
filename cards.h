@@ -4,7 +4,6 @@
 #define CARDS_H
 
 // Globals
-extern unsigned char attributeTableNeedsUpdate;
 extern unsigned char deck[];
 extern unsigned char cardsBeingMoved[];
 extern unsigned char columnCard[];
@@ -21,7 +20,7 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY);
 void dropCardsAtCursor(unsigned char curX, unsigned char curY);
 void returnCardsToOrigin(void);
 
-void drawCardAtCell(unsigned char card, unsigned char row, unsigned char col);
+void drawCardAtCell(unsigned char card, unsigned char col, unsigned char row);
 unsigned int locationWithCell(unsigned char x, unsigned char y);
 
 
