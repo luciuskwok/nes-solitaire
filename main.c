@@ -2,7 +2,7 @@
 
 /* Build commands:
 
-/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c cards.c data.s util.s -o test.nes
+/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c sound.c cards.c data.s util.s -o test.nes
 open test.nes
 
 */
@@ -37,6 +37,9 @@ void main (void) {
 	
 	initScreen();
 	
+	// Enable sound
+	APU.status = 0x0F; // enable pulse, triangle, and noise channels.
+
 	// Wait for start button or any other button.
 	while ((joypad & 0xF0) == 0) {
 		joypad = readJoypad();
@@ -103,6 +106,7 @@ void handleDPad(unsigned char joypad) {
 void handleButtons(unsigned char joypad) {
 	if ((joypad & JoyStart) != 0) {
 		// Handle menu: Start New Game, Exit to Title.
+		returnCardsToOrigin();
 		startMenu();
 	} else if ((joypad & JoySelect) != 0) {
 		// Cancel card movement.
@@ -185,8 +189,8 @@ void resumeGame(void) {
 	unsigned char i;
 	
 	// Erase text
-	for (i=0; i<5; ++i) {
-		drawString("          ", 6, 12+i);
+	for (i=0; i<6; ++i) {
+		drawString("            ", 10, 12+i);
 		refreshScreen();
 	}
 	

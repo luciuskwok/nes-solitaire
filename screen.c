@@ -213,7 +213,14 @@ void animateCardSprite(unsigned char fromX, unsigned char fromY, unsigned char t
 	int dy = (int) toY - (int) fromY;
 	unsigned char i;
 	int x, y;
+	unsigned char volume;
+	unsigned char halfway = duration / 2;
 	SpriteInfo *sprite;
+	
+	// Set up sound
+	APU.noise.control = 0x31;
+	APU.noise.period = 0x03;
+	APU.noise.len = 0xFF;
 	
 	refreshScreen();
 	
@@ -226,8 +233,14 @@ void animateCardSprite(unsigned char fromX, unsigned char fromY, unsigned char t
 			sprite->y = y + (i / 3) * 8 - 1;
 		}
 		++t;
+		volume = (t < halfway)? (t * 9 / halfway) : ((duration - t) * 9 / halfway);
+		APU.noise.control = 0x30 | volume;
+		APU.noise.len = 0xFF;
 		refreshScreen();
 	}
+	
+	APU.noise.control = 0x30;
+	APU.noise.len = 0xFF;
 }
 
 // == getCardTiles() ==

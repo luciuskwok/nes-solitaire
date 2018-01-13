@@ -18,6 +18,10 @@
 #define FaceDownCard (40)
 #define PlaceholderCard (40)
 
+
+#define Note_C1 (3419)
+#define Note_C2 (1709)
+#define Note_C3 (854)
 #define Note_A3 (507)
 #define Note_C4 (427)
 #define Note_A4 (253)

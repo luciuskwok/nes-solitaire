@@ -2,6 +2,7 @@
 
 #include "cards.h"
 #include "screen.h"
+#include "sound.h"
 #include "util.h"
 #include "constants.h"
 #include <nes.h>
@@ -31,7 +32,6 @@ void animateCardFromOriginTo(unsigned char curX, unsigned char curY);
 
 void drawColumnBottom(unsigned char col, unsigned char blankRows);
 unsigned char columnRowAtCursor(unsigned char curX, unsigned char curY);
-void beep(unsigned int noteCode);
 
 
 // == shuffleDeck() ==
@@ -200,11 +200,11 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 	}
 	
 	if (validCard) {
+		playTriangle(Note_C4, 8);
 		// Update the card sprite with the card being moved.
 		setCardSprite(cardsBeingMoved, cardLocation & 0xFF, cardLocation >> 8);
 	} else {
 		// No valid card to select
-		beep(Note_A3);
 	}
 }
 
@@ -316,7 +316,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 	if (validMove) { 
 		autoMoveNextFrame = 1; // Always auto-move cards after user makes a valid move.
 	} else {
-		beep(Note_A3);
+		playTriangle(Note_C3, 8);
 	}
 }
 
@@ -521,7 +521,6 @@ void animateCardFromOriginTo(unsigned char curX, unsigned char curY) {
 	unsigned char endX = (endLocation & 0xFF);
 	unsigned char endY = (endLocation >> 8);
 	
-	//beep(Note_A4);
 	animateCardSprite (startX, startY, endX, endY, 8); // duration=60 for testing, 8 for production.
 }
 
@@ -619,18 +618,4 @@ unsigned char columnRowAtCursor(unsigned char curX, unsigned char curY) {
 		return 255;
 	}
 }
-
-// == beep() ==
-void beep(unsigned int noteCode) {
-	APU.status = 0x0F; // enable pulse, triangle, and noise channels.
-	
-	// time = ( CPU_clock / (16 * frequency) ) - 1
-	// time = ( 1789773 / (16 * 1000) ) - 1
-	// time = 110
-	APU.pulse[0].control = 0x87;
-	APU.pulse[0].ramp = 0x00;
-	APU.pulse[0].period_low = noteCode & 0xFF;
-	APU.pulse[0].len_period_high = 0x10 | ((noteCode >> 8) & 0x07);
-}
-
 
