@@ -22,6 +22,6 @@ void returnCardsToOrigin(void);
 
 void drawCardAtCell(unsigned char card, unsigned char col, unsigned char row);
 unsigned int locationWithCell(unsigned char x, unsigned char y);
-
+void drawAllColumns(void);
 
 #endif

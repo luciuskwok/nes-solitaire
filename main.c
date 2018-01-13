@@ -23,10 +23,10 @@ unsigned char cursorDidMove = 1;
 // Function prototypes
 void handleDPad(unsigned char joypad);
 void handleButtons(unsigned char joypad);
+void startMenu(void);
+void resumeGame(void);
 void moveCursorToCell(unsigned char x, unsigned char y);
-
 void startNewGame(void);
-void shuffleDeck(void);
 
 // == main() ==
 void main (void) {
@@ -43,7 +43,6 @@ void main (void) {
 	}
 	
 	startNewGame();
-	autoMoveNextFrame  = 1;
 	
 	while (1) {
 		refreshScreen();
@@ -104,9 +103,7 @@ void handleDPad(unsigned char joypad) {
 void handleButtons(unsigned char joypad) {
 	if ((joypad & JoyStart) != 0) {
 		// Handle menu: Start New Game, Exit to Title.
-		// todo: show menu instead of just starting over
-		startNewGame();
-		autoMoveNextFrame = 1;
+		startMenu();
 	} else if ((joypad & JoySelect) != 0) {
 		// Cancel card movement.
 		returnCardsToOrigin();
@@ -120,6 +117,86 @@ void handleButtons(unsigned char joypad) {
 			dropCardsAtCursor(cursorX, cursorY);
 		}
 	}
+}
+
+// == startMenu() ==
+void startMenu(void) {
+	unsigned char selectedMenuItem = 2;
+	unsigned char previousJoypad = 0;
+	unsigned char joypad;
+	const unsigned char left = 10;
+	
+	// Show a menu after user presses the start button.
+	drawString("************", left, 11);
+	drawString("* NEW GAME *", left, 12);
+	refreshScreen();
+	drawString("************", left, 13);
+	drawString("************", left, 14);
+	refreshScreen();
+	drawString("*  RETURN  *", left, 15);
+	drawString("************", left, 16);
+	refreshScreen();
+	
+	while (readJoypad() != 0) {
+		// Wait for joypad button release
+	}
+	cursorDidMove = 1;
+	
+	// Loop while user selects a menu item.
+	while (1) {
+		refreshScreen();
+		
+		if (cursorDidMove) {
+			// Move cursor to point at one of the options
+			cursorDidMove = 0;
+			movePointerTo(127, 76 + 24 * selectedMenuItem);
+		}
+
+		// Update joypad and move pointer.
+		joypad = readJoypad();
+		if (joypad != previousJoypad) {
+			// Directions
+			if ((joypad & JoyUp) != 0) {
+				--selectedMenuItem;
+				cursorDidMove = 1;
+			}
+			if ((joypad & JoyDown) != 0) {
+				++selectedMenuItem;
+				cursorDidMove = 1;
+			}
+			selectedMenuItem = (selectedMenuItem > 1)? selectedMenuItem : 1;
+			selectedMenuItem = (selectedMenuItem < 2)? selectedMenuItem : 2;
+			
+			// Buttons
+			if ((joypad & JoyStart) != 0) { // Start: cancel and return to game
+				resumeGame();
+				break;
+			} else if ((joypad & (JoyButtonB | JoyButtonA)) != 0) { // Make selection
+				if (selectedMenuItem == 0) {
+					startNewGame();
+					break;
+				} else if (selectedMenuItem == 1) {
+					resumeGame();
+					break;
+				}
+			}
+		}
+		previousJoypad = joypad;
+	}
+}
+
+// == resumeGame() ==
+void resumeGame(void) {
+	unsigned char i;
+	
+	// Erase text
+	for (i=0; i<5; ++i) {
+		drawString("          ", 6, 12+i);
+		refreshScreen();
+	}
+	
+	drawAllColumns();
+	cursorDidMove = 1;
 }
 
 // == moveCursorToCell() ==
@@ -171,6 +248,7 @@ void startNewGame(void) {
 		refreshScreen();
 	}
 	
+	autoMoveNextFrame  = 1;
 }
 
 

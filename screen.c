@@ -77,10 +77,10 @@ void initScreen(void) {
 	
 	// Draw screen
 	updateScreenForNewGame();
-	drawStringImmediate("PRESS START", 10, 11);
+	drawString("PRESS START", 10, 11);
 		
 	// Finalize and turn screen on
-	showScreen();
+	refreshScreen();
 }
 
 // == hideScreen() ==
@@ -370,18 +370,19 @@ void drawTestPattern(void) {
 	}
 }
 
-// == drawStringImmediate() ==
-void drawStringImmediate(const char *string, unsigned char x, unsigned char y) {
-	unsigned int address = 0x2000 + y * 32 + x;
-	unsigned char i = 0;
-	
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	while (string[i] != 0) {
-		PPU.vram.data = string[i];
-		++i;
-		if (i == 0) break;
+unsigned char stringLength(const char *string) {
+	unsigned char length = 0;
+	while (string[length] != 0 && length != 255) {
+		++length;
 	}
+	return length;
+}
+
+// == drawString() ==
+void drawString(const char *string, unsigned char x, unsigned char y) {
+	unsigned int address = 0x2000 + y * 32 + x;
+	unsigned char length = stringLength(string);
+	addVramUpdate(address, length, string);
 }
 
 // == stringWithByte() ==

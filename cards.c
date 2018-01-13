@@ -569,6 +569,21 @@ void drawColumnBottom(unsigned char col, unsigned char blankRows) {
 	}
 }
 
+// == drawAllColumns() ==
+// Draw all the cards in the tableau columns. Used after dismissing a menu that popped up over the tableau.
+void drawAllColumns(void) {
+	unsigned char col, row, card;
+	for (col=0; col<8; ++col) {
+		for (row=0; row<MaxColumnHeight; ++row) {
+			card = columnCard[col * MaxColumnHeight + row];
+			if (card < 40) {
+				drawCardAtCell(card, col + 1, row + 2);
+				refreshScreen();
+			}
+		}
+	}
+}
+
 // == locationWithCell() ==
 unsigned int locationWithCell(unsigned char x, unsigned char y) {
 	if (y > 1) {
