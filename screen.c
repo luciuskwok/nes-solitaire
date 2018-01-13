@@ -378,6 +378,46 @@ unsigned char stringLength(const char *string) {
 	return length;
 }
 
+// == drawButton() ==
+void drawButton(const char *title, unsigned char x, unsigned char y, unsigned char width) {
+	unsigned int address = 0x2000 + y * 32 + x;
+	unsigned char strlen = stringLength(title);
+	unsigned char titleStart = (width - strlen) / 2;
+	unsigned char titleEnd = titleStart + strlen;
+	unsigned char tiles[32];
+	unsigned char i;
+	
+	// Top line
+	tiles[0] = 0xDB;
+	for (i=1; i<width - 1; ++i) {
+		tiles[i] = 0xDC;
+	}
+	tiles[width - 1] = 0xDD;
+	addVramUpdate(address, width, tiles);
+	
+	// Title line
+	address += 32;
+	tiles[0] = 0xEB;
+	for (i=1; i<width - 1; ++i) {
+		if (titleStart <= i && i < titleEnd) {
+			tiles[i] = title[i - titleStart];
+		} else {
+			tiles[i] = 0x20;
+		}
+	}
+	tiles[width - 1] = 0xED;
+	addVramUpdate(address, width, tiles);
+	
+	// Bottom line
+	address += 32;
+	tiles[0] = 0xFB;
+	for (i=1; i<width - 1; ++i) {
+		tiles[i] = 0xFC;
+	}
+	tiles[width - 1] = 0xFD;
+	addVramUpdate(address, width, tiles);
+}
+
 // == drawString() ==
 void drawString(const char *string, unsigned char x, unsigned char y) {
 	unsigned int address = 0x2000 + y * 32 + x;

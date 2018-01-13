@@ -127,14 +127,9 @@ void startMenu(void) {
 	const unsigned char left = 10;
 	
 	// Show a menu after user presses the start button.
-	drawString("************", left, 11);
-	drawString("* NEW GAME *", left, 12);
+	drawButton("NEW GAME", left, 11, 12);
 	refreshScreen();
-	drawString("************", left, 13);
-	drawString("************", left, 14);
-	refreshScreen();
-	drawString("*  RETURN  *", left, 15);
-	drawString("************", left, 16);
+	drawButton("CONTINUE", left, 14, 12);
 	refreshScreen();
 	
 	while (readJoypad() != 0) {
@@ -172,10 +167,10 @@ void startMenu(void) {
 				resumeGame();
 				break;
 			} else if ((joypad & (JoyButtonB | JoyButtonA)) != 0) { // Make selection
-				if (selectedMenuItem == 0) {
+				if (selectedMenuItem == 1) {
 					startNewGame();
 					break;
-				} else if (selectedMenuItem == 1) {
+				} else if (selectedMenuItem == 2) {
 					resumeGame();
 					break;
 				}
@@ -248,6 +243,7 @@ void startNewGame(void) {
 		refreshScreen();
 	}
 	
+	cursorDidMove = 1;
 	autoMoveNextFrame  = 1;
 }
 
