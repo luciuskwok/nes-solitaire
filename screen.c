@@ -31,7 +31,6 @@ extern const unsigned char PlaceholderRowDataSize;
 extern void __fastcall__ updateVramFast(void);
 
 // Function Prototypes
-void updateVram(void);
 void drawTestPattern(void);
 void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles, unsigned char color);
 unsigned char hexChar(unsigned char value);
@@ -110,42 +109,19 @@ void resetScrollPosition(void) {
 
 // == refreshScreen() ==
 void refreshScreen(void) {
-	unsigned char oldVramUpdateIndex = vramUpdateIndex; // debugging
-	
 	waitvsync();
 	PPU.control = 0x00; // turn off screen
 	PPU.mask = 0x00;
 	updateVramFast();
 	showScreen();
-	
-	if (oldVramUpdateIndex > 5) {
-		drawHexByte (oldVramUpdateIndex, 0, 29); // debugging
-	}
-}
-
-// == updateVram() ==
-void updateVram(void) {
-	// Internal format of an update: 
-	// address: 2 bytes
-	// length: 1 byte
-	// data: number of bytes according to length
-	unsigned char index = 0;
-	unsigned char remain;
-	while (index < vramUpdateIndex) {
-		PPU.vram.address = vramUpdates[index];
-		PPU.vram.address = vramUpdates[++index];
-		remain = vramUpdates[++index];
-		while (remain > 0) {
-			PPU.vram.data = vramUpdates[++index];
-			--remain;
-		}
-		++index;
-	}
-	vramUpdateIndex = 0; // Reset to zero
 }
 
 // == addVramUpdate() ==
 void addVramUpdate(unsigned int address, unsigned char length, const unsigned char *data) {
+	// Internal format of an update: 
+	// address: 2 bytes
+	// length: 1 byte
+	// data: number of bytes according to length
 	unsigned char i = 0;
 	if (vramUpdateIndex <= 252 - length) { // Check for enough space in vramUpdates buffer to store data
 		vramUpdates[vramUpdateIndex] = (address >> 8);

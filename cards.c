@@ -115,6 +115,7 @@ void autoMoveCards(void) {
 // fromCol: 0 to 7 for tableau columns, 8 to 10 for freecells
 // toFou: 0 to 2 for foundations, and 3 for flower card
 void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toFou) {
+	unsigned int startLocation;
 	unsigned char moveCard;
 	unsigned char colHeight, index;
 	
@@ -141,7 +142,8 @@ void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toF
 	// Animate card being moved
 	cardsBeingMoved[0] = moveCard;
 	cardsBeingMoved[1] = 255;
-	setCardSprite(cardsBeingMoved, 0, 0);
+	startLocation = locationWithCell(originatingCellX, originatingCellY);
+	setCardSprite(cardsBeingMoved, startLocation, startLocation >> 8);
 	animateCardFromOriginTo(toFou + 6, 1);
 	cardsBeingMoved[0] = 255;
 	setCardSprite(0, 0, 0);
@@ -301,6 +303,10 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 				columnCard[col * MaxColumnHeight + height + i] = moveCard;
 				cardsBeingMoved[i] = 255;
 				drawCardAtCell(moveCard, col + 1, height + i + 2);
+				
+				if (i % 2 == 1) {
+					refreshScreen();
+				}
 			}
 			destinationX = col + 1;
 			destinationY = height + 2;
