@@ -8,12 +8,13 @@ extern unsigned char debugValue1, debugValue2;
 
 // Function prototypes
 void initScreen(void);
+
+void hideScreen(void);
+void showScreen(void);
+void resetScrollPosition(void);
+
 void refreshScreen(void);
 void addVramUpdate(unsigned int address, unsigned char length, const unsigned char *data);
-
-void setScreenVisible(unsigned char on);
-void resetScrollPosition(void);
-void refreshOAM(void);
 
 void setColorAttribute(unsigned char color, unsigned char x, unsigned char y);
 
@@ -28,7 +29,7 @@ void eraseHalfCardArea (unsigned char x, unsigned char y);
 
 void updateScreenForNewGame(void);
 
-void drawString(const char *string, unsigned char x, unsigned char y);
+void drawStringImmediate(const char *string, unsigned char x, unsigned char y);
 void stringWithByte(unsigned char byte, char outString[]);
 void drawHexByte (unsigned char byte, unsigned char x, unsigned char y);
 

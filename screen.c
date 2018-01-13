@@ -47,7 +47,7 @@ void initScreen(void) {
 	unsigned char index8;
 	
 	// Clear sprite area
-	setScreenVisible(0);
+	hideScreen();
 	index8 = 0;
 	do {
 		spriteAreaPtr[index8] = 0;
@@ -75,24 +75,49 @@ void initScreen(void) {
 	
 	// Draw screen
 	updateScreenForNewGame();
-	drawString("PRESS START", 10, 11);
+	drawStringImmediate("PRESS START", 10, 11);
 		
 	// Finalize and turn screen on
-	resetScrollPosition();
-	setScreenVisible(1);
+	showScreen();
+}
+
+// == hideScreen() ==
+void hideScreen(void) {
+	PPU.control = 0;
+	PPU.mask = 0;
+}
+
+// == showScreen() ==
+void showScreen(void) {
+	PPU.sprite.address = 0;
+	APU.sprite.dma = 2;
+	PPU.control =0x80; // enable NMI, use nametable 0
+	PPU.mask = 0x1E;  // turn on screen
+	PPU.vram.address = 0;
+ 	PPU.vram.address = 0;
+	PPU.scroll = 0; // reset scroll position
+	PPU.scroll = 0;
+}
+
+// == resetScrollPosition() ==
+void resetScrollPosition(void) {
+	PPU.scroll = 0;
+	PPU.scroll = 0;
 }
 
 // == refreshScreen() ==
 void refreshScreen(void) {
-	waitvsync();
-	setScreenVisible(0);
+	unsigned char oldVramUpdateIndex = vramUpdateIndex; // debugging
 	
-	if (vramUpdateIndex > 0) {
-		//drawHexByte (vramUpdateIndex, 0, 29); // debugging
-	}
-
+	waitvsync();
+	PPU.control = 0x00; // turn off screen
+	PPU.mask = 0x00;
 	updateVram();
-	refreshOAM(); // also resets scroll position
+	showScreen();
+	
+	if (oldVramUpdateIndex > 5) {
+		drawHexByte (oldVramUpdateIndex, 0, 29); // debugging
+	}
 }
 
 // == updateVram() ==
@@ -116,7 +141,7 @@ void updateVram(void) {
 	vramUpdateIndex = 0; // Reset to zero
 }
 
-// == updateVram() ==
+// == addVramUpdate() ==
 void addVramUpdate(unsigned int address, unsigned char length, const unsigned char *data) {
 	unsigned char i = 0;
 	if (vramUpdateIndex <= 252 - length) { // Check for enough space in vramUpdates buffer to store data
@@ -129,32 +154,6 @@ void addVramUpdate(unsigned int address, unsigned char length, const unsigned ch
 		}
 		++vramUpdateIndex;
 	}
-}
-
-// == setScreenVisible() ==
-void setScreenVisible(unsigned char on) {
-	PPU.control = (on != 0)? 0x80 : 0x00; // enable NMI, use nametable 0
-	PPU.mask = (on != 0)? 0x1E : 0x00;  // turn on screen
-}
-
-// == resetScrollPosition() ==
-void resetScrollPosition(void) {
-	// Reset scroll position
-	PPU.vram.address = 0;
-	PPU.vram.address = 0;
-	PPU.scroll = 0;
-	PPU.scroll = 0;
-}
-
-// == refreshOAM() ==
-void refreshOAM(void) {
-	PPU.sprite.address = 0;
-	APU.sprite.dma = 2;
-	PPU.vram.address = 0;
-	PPU.vram.address = 0;
-	PPU.scroll = 0;
-	PPU.scroll = 0;
-	setScreenVisible(1);
 }
 
 // == setColorAttribute() ==
@@ -198,6 +197,7 @@ void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
 	unsigned char color = 0;
 	unsigned char i;
 	unsigned char tile[12];
+	unsigned char palette[3];
 	SpriteInfo *sprite;
 	
 	if (cards != 0) {
@@ -219,12 +219,11 @@ void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
 	
 	// Set sprite color
 	if (cards != 0) {
-		i = color * 4 + 1;
-		PPU.vram.address = 0x3F;
-		PPU.vram.address = 0x15;
-		PPU.vram.data = PaletteData[i];
-		PPU.vram.data = PaletteData[++i];
-		PPU.vram.data = 0x31; // light blue
+		i = color * 4;
+		palette[0] = PaletteData[++i];
+		palette[1] = PaletteData[++i];
+		palette[2] = 0x31; // light blue
+		addVramUpdate(0x3F15, 3, palette);
 	}
 }
 
@@ -237,8 +236,7 @@ void animateCardSprite(unsigned char fromX, unsigned char fromY, unsigned char t
 	int x, y;
 	SpriteInfo *sprite;
 	
-	waitvsync();
-	refreshOAM();
+	refreshScreen();
 	
 	while (t <= duration) {
 		x = fromX + (dx * t / (int) duration);
@@ -249,8 +247,7 @@ void animateCardSprite(unsigned char fromX, unsigned char fromY, unsigned char t
 			sprite->y = y + (i / 3) * 8 - 1;
 		}
 		++t;
-		waitvsync();
-		refreshOAM();
+		refreshScreen();
 	}
 }
 
@@ -394,8 +391,8 @@ void drawTestPattern(void) {
 	}
 }
 
-// == drawString() ==
-void drawString(const char *string, unsigned char x, unsigned char y) {
+// == drawStringImmediate() ==
+void drawStringImmediate(const char *string, unsigned char x, unsigned char y) {
 	unsigned int address = 0x2000 + y * 32 + x;
 	unsigned char i = 0;
 	

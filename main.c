@@ -5,6 +5,7 @@
 /Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c cards.c data.s util.s -o test.nes
 open test.nes
 
+/Applications/Emulators/cc65-master/bin/cc65 -O -t nes screen.c
 */
 
 #include <time.h>
@@ -156,10 +157,10 @@ void startNewGame(void) {
 	
 	// Erase entire screen and draw the placeholder row
 	waitvsync();
-	setScreenVisible(0);
+	hideScreen();
 	updateScreenForNewGame();
 	setCardSprite(0, 0, 0);
-	refreshScreen();
+	showScreen();
 	
 	// Place and draw cards into columns at the same time, showing each card one frame at a time.
 	for (i=0; i<40; ++i) {

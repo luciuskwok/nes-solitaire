@@ -198,11 +198,8 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 	}
 	
 	if (validCard) {
-		//beep(Note_A4);
-		
 		// Update the card sprite with the card being moved.
 		setCardSprite(cardsBeingMoved, cardLocation & 0xFF, cardLocation >> 8);
-		resetScrollPosition();
 	} else {
 		// No valid card to select
 		beep(Note_A3);
@@ -268,6 +265,13 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 			}
 		}
 		if (validMove) {
+			// Animate moving card.
+			if (originatingCellX > 0) {
+				animateCardFromOriginTo(curX, curY);
+			}
+			setCardSprite(0, 0, 0); // then remove the sprite
+	
+			// Draw moved card at destination in background tiles.
 			cardsBeingMoved[0] = 255;
 			destinationX = curX;
 			destinationY = curY;
@@ -286,7 +290,12 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 				validMove = 1;
 			}
 		}
-		if (validMove) { // Move cards to column
+		if (validMove) { 
+			// Animate moving cards
+			animateCardFromOriginTo(col + 1, height + 2);
+			setCardSprite(0, 0, 0); // then remove the sprite
+		
+			// Move cards to column
 			for (i=0; i<moveCount; ++i) {
 				moveCard = cardsBeingMoved[i];
 				columnCard[col * MaxColumnHeight + height + i] = moveCard;
@@ -298,11 +307,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 		}
 	}
 	
-	if (validMove) { // Animate card sprite
-		if (originatingCellX > 0) {
-			animateCardFromOriginTo(destinationX, destinationY);
-		}
-		setCardSprite(0, 0, 0); // then remove the sprite
+	if (validMove) { 
 		autoMoveNextFrame = 1; // Always auto-move cards after user makes a valid move.
 	} else {
 		beep(Note_A3);
