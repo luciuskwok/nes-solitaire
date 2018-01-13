@@ -318,6 +318,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 // Check if all the honor cards are available, except for the card being moved, which has already been taken off the screen. Then move the cards one by one to the foundation cell, except for the last one, which will be moved by the calling function.
 unsigned char consolidateHonors(unsigned char moveCard, unsigned char curX, unsigned char curY) {
 	unsigned char foundCount = 0;
+	unsigned char colToSkip = 8; // skip the originating column to avoid bug with the ability to consolidate when two honor cards are on the bottom of the column 
 	unsigned char originX[4]; // coordinates for moving the other 3 cards
 	unsigned char originY[4];
 	unsigned char col, colHeight, x, y;
@@ -325,6 +326,11 @@ unsigned char consolidateHonors(unsigned char moveCard, unsigned char curX, unsi
 	// Save originatingCell coordinate to restore for last animation
 	originX[3] = originatingCellX;
 	originY[3] = originatingCellY;
+	
+	// Determine column skip
+	if (originatingCellY >= 2) {
+		colToSkip = originatingCellX - 1;
+	}
 	
 	// Freecells
 	for (col=0; col<3; ++col) {
@@ -337,12 +343,14 @@ unsigned char consolidateHonors(unsigned char moveCard, unsigned char curX, unsi
 	
 	// Columns
 	for (col=0; col<8; ++col) {
-		colHeight = columnHeight(col);
-		if (colHeight > 0) {
-			if (isMatchingHonor(moveCard, columnCard[col * MaxColumnHeight + colHeight - 1])) {
-				originX[foundCount] = col + 1;
-				originY[foundCount] = colHeight + 1;
-				++foundCount;
+		if (col != colToSkip) {
+			colHeight = columnHeight(col);
+			if (colHeight > 0) {
+				if (isMatchingHonor(moveCard, columnCard[col * MaxColumnHeight + colHeight - 1])) {
+					originX[foundCount] = col + 1;
+					originY[foundCount] = colHeight + 1;
+					++foundCount;
+				}
 			}
 		}
 	}

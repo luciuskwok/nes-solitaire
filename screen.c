@@ -13,7 +13,7 @@
 const unsigned char PointerSprite_Tile[] = { 0xEE, 0xEF, 0xFE, 0xFF };
 
 // Global variables
-unsigned char vramUpdates[255];
+unsigned char vramUpdates[256];
 unsigned char vramUpdateIndex = 0;
 unsigned char attributeTableShadow[64]; // Copy of the attribute table in the nametable for easier modifications.
 unsigned char *spriteAreaPtr = (unsigned char *)0x0200;
@@ -26,6 +26,9 @@ extern const unsigned char FaceDownCardTileData[];
 extern const unsigned char PlaceholderTileData[];
 extern const unsigned char PlaceholderRowData[];
 extern const unsigned char PlaceholderRowDataSize;
+
+// Assembly Routines
+extern void __fastcall__ updateVramFast(void);
 
 // Function Prototypes
 void updateVram(void);
@@ -112,7 +115,7 @@ void refreshScreen(void) {
 	waitvsync();
 	PPU.control = 0x00; // turn off screen
 	PPU.mask = 0x00;
-	updateVram();
+	updateVramFast();
 	showScreen();
 	
 	if (oldVramUpdateIndex > 5) {

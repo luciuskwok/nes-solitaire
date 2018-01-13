@@ -4,6 +4,7 @@
 ; unsigned char __fastcall__ readJoypad(void);
 ; unsigned char __fastcall__ pseudorandom(void);
 ; void __fastcall__ seedrandom(unsigned int);
+; void __fastcall__ updateVramFast(void);
 
 ; Zero-page globals
 .zeropage
@@ -13,6 +14,14 @@ rngseed: .res 2
 .export _readJoypad
 .export _pseudorandom
 .export _seedrandom
+.export _updateVramFast
+
+.import _vramUpdates
+.import _vramUpdateIndex
+
+; PPU registers
+PPUADDR = $2006
+PPUDATA = $2007
 
 
 ; ==== readJoypad() ====
@@ -61,4 +70,33 @@ loop:
 	stx rngseed + 1
 	rts
 .endproc
+
+
+; ==== updateVramFast() ====
+.proc _updateVramFast
+	ldx #0
+	beq moreData
+addrLoop:
+	lda _vramUpdates,X			; VRAM address high-byte
+	sta PPUADDR
+	inx
+	lda _vramUpdates,X			; VRAM address low-byte
+	sta PPUADDR
+	inx
+	ldy _vramUpdates,X			; data length
+	inx
+dataLoop:
+	lda _vramUpdates,X			; data byte
+	sta PPUDATA
+	inx
+	dey
+	bne dataLoop
+moreData:
+	cpx _vramUpdateIndex		; if X < vramUpdateIndex
+	bcc addrLoop				; then keep looping
+	lda #0
+	sta _vramUpdateIndex		; reset vramUpdateIndex to zero
+	rts
+.endproc
+
 

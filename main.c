@@ -5,7 +5,6 @@
 /Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c cards.c data.s util.s -o test.nes
 open test.nes
 
-/Applications/Emulators/cc65-master/bin/cc65 -O -t nes screen.c
 */
 
 #include <time.h>
