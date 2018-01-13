@@ -11,26 +11,18 @@ extern unsigned char columnCard[];
 extern unsigned char freecellCard[];
 extern unsigned char foundationCard[]; // There are only 3 foundations, but having 4 allocated makes some programming easier.
 extern unsigned char originatingCellX, originatingCellY; // used when moving cards
-extern unsigned char invalidCell[]; // for marking where to redraw cards
-extern unsigned char invalidCellCount;
 extern unsigned char autoMoveNextFrame;
 
 // Functions
 void shuffleDeck(void);
 void autoMoveCards(void);
 
-void invalidateCell (unsigned char col, unsigned char row);
-void drawInvalidCells(void);
-
-unsigned int locationWithCell(unsigned char x, unsigned char y);
-unsigned char columnRowAtCursor(unsigned char curX, unsigned char curY);
 void pickUpCardsAtCursor(unsigned char curX, unsigned char curY);
 void dropCardsAtCursor(unsigned char curX, unsigned char curY);
 void returnCardsToOrigin(void);
-void clearCardsBeingMoved(void);
-unsigned char numberOfCardsBeingMoved(void);
-unsigned char columnHeight(unsigned char col);
-unsigned char topMovableRowAtColumn(unsigned char col);
+
+void drawCardAtCell(unsigned char card, unsigned char row, unsigned char col);
+unsigned int locationWithCell(unsigned char x, unsigned char y);
 
 
 #endif

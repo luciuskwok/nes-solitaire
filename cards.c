@@ -7,7 +7,6 @@
 #include <nes.h>
 
 // Constants
-#define MaxInvalidCells (32)
 
 // Globals
 unsigned char deck[40];
@@ -16,15 +15,22 @@ unsigned char columnCard[8 * MaxColumnHeight];
 unsigned char freecellCard[4];
 unsigned char foundationCard[4]; // There are only 3 foundations, but having 4 allocated makes some programming easier.
 unsigned char originatingCellX, originatingCellY; // used when moving cards
-unsigned char invalidCell[MaxInvalidCells]; // for marking where to redraw cards
-unsigned char invalidCellCount = 0;
 unsigned char autoMoveNextFrame = 0; 
 
 // Function Prototypes
+void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toFou);
+
+void clearCardsBeingMoved(void);
+unsigned char numberOfCardsBeingMoved(void);
+unsigned char columnHeight(unsigned char col);
+unsigned char topMovableRowAtColumn(unsigned char col);
+
 unsigned char consolidateHonors(unsigned char moveCard, unsigned char curX, unsigned char curY);
 unsigned char isMatchingHonor(unsigned char card1, unsigned char card2);
 void animateCardFromOriginTo(unsigned char curX, unsigned char curY);
-void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toFou);
+
+void drawColumnBottom(unsigned char col, unsigned char blankRows);
+unsigned char columnRowAtCursor(unsigned char curX, unsigned char curY);
 void beep(unsigned int noteCode);
 
 
@@ -117,17 +123,16 @@ void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toF
 		index = fromCol * MaxColumnHeight + colHeight - 1;
 		moveCard = columnCard[index];
 		columnCard[index] = 255;
-		invalidateCell(fromCol + 1, colHeight + 1);
-		invalidateCell(fromCol + 1, colHeight);
+		drawColumnBottom(fromCol, 1);
 		originatingCellX = fromCol + 1;
 		originatingCellY = colHeight + 1;
 	} else {
 		index = fromCol - 8;
 		moveCard = freecellCard[index];
 		freecellCard[index] = 255;
-		invalidateCell(index + 1, 1);
 		originatingCellX = index + 1;
 		originatingCellY = 1;
+		drawCardAtCell(255, originatingCellX, originatingCellY); // draw placeholder
 	}
 	
 	// Redraw screen to remove card being moved
@@ -143,100 +148,7 @@ void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toF
 
 	// Place card at destination after animation finishes. 
 	foundationCard[toFou] = moveCard;
-	invalidateCell(toFou + 6, 1);
-}
-
-
-// == invalidateCell() ==
-void invalidateCell (unsigned char col, unsigned char row) {
-	if (invalidCellCount < MaxInvalidCells) {
-		--col;
-		--row;
-		invalidCell[invalidCellCount] = (col << 4) | row;
-		++invalidCellCount;
-	}
-}
-
-// == drawInvalidCells() ==
-void drawInvalidCells(void) {
-	unsigned char card = 255;
-	unsigned char i;
-	unsigned int location;
-	unsigned char col, row, cell;
-	unsigned char x, y;
-	
-	for (i=0; i<invalidCellCount; ++i) {
-		cell = invalidCell[i];
-		invalidCell[i] = 255;
-		if (cell < 255) {
-			col = cell >> 4;
-			row = cell & 0x0F;
-			location = locationWithCell(col + 1, row + 1);
-		
-			// Get card value
-			if (row == 0) {
-				if (col < 3) {
-					card = freecellCard[col];
-				} else if (5 <= col && col < 8) {
-					card = foundationCard[col - 5];
-				}  else if (col == 8) { // Flower card
-					card = foundationCard[3];
-				}
-			} else {
-				card = columnCard[col * MaxColumnHeight + row - 1];
-			}
-			
-			// Draw card
-			x = (location & 0xFF) / 8;
-			y = (location >> 8) / 8;
-			if (card <= 40) {
-				drawCard (card, x, y);
-			} else {
-				if (row == 0) {
-					drawPlaceholder (x, y);
-				} else {
-					eraseRect(x, y, 3, 4);
-				}
-			}
-		}
-	}
-	invalidCellCount = 0;
-}
-
-// == locationWithCell() ==
-unsigned int locationWithCell(unsigned char x, unsigned char y) {
-	if (y > 1) {
-		++y;
-	}
-	if (x == 9 && y == 1) {
-		x = 120;
-	} else {
-		x = x * 24 + 8;
-	}
-	y = y * 16;
-	return x | y << 8;
-}
-
-// == columnRowAtCursor() ==
-// Returns the row of the card at the cursor, taking in to account the height of the bottom-most card. If cursor is at top row, returns 0. If no valid card is at cursor, returns 255.
-unsigned char columnRowAtCursor(unsigned char curX, unsigned char curY) {
-	unsigned char col = curX - 1;
-	unsigned char row = curY- 2;
-	unsigned char height;
-	
-	if (curY == 1) {
-		return 0;
-	}
-	
-	height = columnHeight(col);
-	if (row <= height) {
-		if (row == height) {
-			--row; // Selecting bottom half of bottom-most card counts as selecting the card.
-		}
-		return row;
-	} else {
-		return 255;
-	}
+	drawCardAtCell (moveCard, toFou + 6, 1);
 }
 
 // == pickUpCardsAtCursor() ==
@@ -259,7 +171,7 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 			cardLocation = locationWithCell(curX, curY);
 			originatingCellX = curX;
 			originatingCellY = curY;
-			invalidateCell(curX, curY);
+			drawCardAtCell(255, curX, curY); // draw placeholder
 			validCard = 1;
 		}
 	} else if (curY >= 2) { // Tableau 
@@ -273,15 +185,12 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 				for (index = row; index < colHeight; ++index) {
 					cardsBeingMoved[index - row] = colPtr[index];
 					colPtr[index] = 255;
-					invalidateCell (curX, index + 2); // erase the area that the old card used
 				}
 				originatingCellX = curX; // allows drops back at original location to cancel a move
 				originatingCellY = row + 2;
 				cardLocation = locationWithCell(originatingCellX, originatingCellY);
 			
-				if (row > 0) { // Redraw the card left behind, if any
-					invalidateCell(originatingCellX, originatingCellY - 1); 
-				}
+				drawColumnBottom (col, colHeight - row);
 				validCard = 1;
 			}
 		}
@@ -335,6 +244,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 					// Handle dropping an Honor card onto another Honor card.
 					if ((bottomCard - 27) / 4 == (moveCard - 27) / 4) { // same color.
 						validMove = consolidateHonors(moveCard, curX, curY); 
+						moveCard = FaceDownCard; // draw face-down card at destination cell
 					}
 				}
 			} else if (col >= 5) {
@@ -361,7 +271,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 			cardsBeingMoved[0] = 255;
 			destinationX = curX;
 			destinationY = curY;
-			invalidateCell(destinationX, destinationY);
+			drawCardAtCell (moveCard, curX, curY);
 		}
 	} else {
 		// Dropping cards anywhere in a column will be interpreted as dropping them on the bottom-most card.
@@ -377,12 +287,11 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 			}
 		}
 		if (validMove) { // Move cards to column
-			//beep(Note_A4);
-			invalidateCell(col + 1, height + moveCount + 2);
 			for (i=0; i<moveCount; ++i) {
-				columnCard[col * MaxColumnHeight + height + i] = cardsBeingMoved[i];
+				moveCard = cardsBeingMoved[i];
+				columnCard[col * MaxColumnHeight + height + i] = moveCard;
 				cardsBeingMoved[i] = 255;
-				invalidateCell(col + 1, height + i + 2);
+				drawCardAtCell(moveCard, col + 1, height + i + 2);
 			}
 			destinationX = col + 1;
 			destinationY = height + 2;
@@ -451,12 +360,10 @@ unsigned char consolidateHonors(unsigned char moveCard, unsigned char curX, unsi
 			// Remove card from screen
 			if (y == 1) { // Freecell
 				freecellCard[x - 1] = 255;
+				drawCardAtCell(255, x, y);
 			} else { // Column
 				columnCard[(x - 1) * MaxColumnHeight + (y - 2)] = 255;
-			}
-			invalidateCell(x, y);
-			if (y > 2) {
-				invalidateCell(x, y - 1); // also redraw the card above the one removed in the column
+				drawColumnBottom(x-1, 1);
 			}
 			refreshScreen();
 			
@@ -488,7 +395,7 @@ unsigned char isMatchingHonor(unsigned char card1, unsigned char card2) {
 void returnCardsToOrigin(void) {
 	unsigned char col = originatingCellX - 1;
 	unsigned char row = originatingCellY - 2;
-	unsigned char i;
+	unsigned char i, moveCard;
 	
 	if (cardsBeingMoved[0] >= 40) {
 		return;
@@ -499,16 +406,18 @@ void returnCardsToOrigin(void) {
 		// Only the 3 freecells are valid origins
 		if (originatingCellX <= 3) {
 			// Should be only one card being moved.
-			freecellCard[originatingCellX - 1] = cardsBeingMoved[0];
+			moveCard = cardsBeingMoved[0];
+			freecellCard[originatingCellX - 1] = moveCard;
 			cardsBeingMoved[0] = 255;
-			invalidateCell(originatingCellX, originatingCellY);
+			drawCardAtCell (moveCard, originatingCellX, originatingCellY);
 		}
 	} else if (originatingCellY > 1) {
 		i = 0;
 		while (cardsBeingMoved[i] < 40 && i < MaxColumnHeight) {
-			columnCard[col * MaxColumnHeight + row + i] = cardsBeingMoved[i];
+			moveCard = cardsBeingMoved[i];
+			columnCard[col * MaxColumnHeight + row + i] = moveCard;
 			cardsBeingMoved[i] = 255;
-			invalidateCell(originatingCellX, originatingCellY + i);
+			drawCardAtCell (moveCard, originatingCellX, originatingCellY + i);
 			++i;
 		}
 	}
@@ -594,7 +503,87 @@ void animateCardFromOriginTo(unsigned char curX, unsigned char curY) {
 	unsigned char endY = (endLocation >> 8);
 	
 	//beep(Note_A4);
-	animateCardSprite (startX, startY, endX, endY, 60); // duration=60 for testing, 8 for production.
+	animateCardSprite (startX, startY, endX, endY, 8); // duration=60 for testing, 8 for production.
+}
+
+// == drawCardAtCell() ==
+void drawCardAtCell(unsigned char card, unsigned char row, unsigned char col) {
+	unsigned int location = locationWithCell(row, col);
+	unsigned char x = (location & 0x00FF) / 8;
+	unsigned char y = (location & 0xFF00) >> 11;
+	
+	drawHexByte (x, 0, 29);
+	drawHexByte (y, 3, 29);
+	
+	if (card <= 40) {
+		drawCard (card, x, y);
+	} else {
+		if (row == 1) {
+			drawPlaceholder (x, y);
+		} else {
+			eraseHalfCardArea (x, y);
+			eraseHalfCardArea (x, y + 2);
+		}
+	}
+}
+
+// == drawColumnBottom() ==
+void drawColumnBottom(unsigned char col, unsigned char blankRows) {
+	unsigned char colHeight = columnHeight(col);
+	unsigned char cellX = col + 1;
+	unsigned char cellY = colHeight + 1;
+	unsigned char card = 255;
+	unsigned int location = locationWithCell(cellX, cellY);
+	unsigned char tileX = (location & 0x00FF) / 8;
+	unsigned char tileY = (location & 0xFF00) >> 11;
+	unsigned char i;
+	
+	if (colHeight > 0) {
+		card = columnCard[col * MaxColumnHeight + colHeight - 1];
+	}
+	drawCardAtCell (card, cellX, cellY);
+
+	tileY += 4;
+	for (i=0; i<blankRows; ++i) {
+		eraseHalfCardArea(tileX, tileY);
+		tileY += 2;
+	}
+}
+
+// == locationWithCell() ==
+unsigned int locationWithCell(unsigned char x, unsigned char y) {
+	if (y > 1) {
+		++y;
+	}
+	if (x == 9 && y == 1) {
+		x = 120;
+	} else {
+		x = x * 24 + 8;
+	}
+	y = y * 16;
+	return x | y << 8;
+}
+
+// == columnRowAtCursor() ==
+// Returns the row of the card at the cursor, taking in to account the height of the bottom-most card. If cursor is at top row, returns 0. If no valid card is at cursor, returns 255.
+unsigned char columnRowAtCursor(unsigned char curX, unsigned char curY) {
+	unsigned char col = curX - 1;
+	unsigned char row = curY- 2;
+	unsigned char height;
+	
+	if (curY == 1) {
+		return 0;
+	}
+	
+	height = columnHeight(col);
+	if (row <= height) {
+		if (row == height) {
+			--row; // Selecting bottom half of bottom-most card counts as selecting the card.
+		}
+		return row;
+	} else {
+		return 255;
+	}
 }
 
 // == beep() ==

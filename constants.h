@@ -17,8 +17,6 @@
 #define FlowerCard (39)
 #define FaceDownCard (40)
 #define PlaceholderCard (40)
-#define ColumnsOffsetX (4)
-#define ColumnsOffsetY (6)
 
 #define Note_A3 (507)
 #define Note_C4 (427)

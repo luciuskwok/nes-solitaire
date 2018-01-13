@@ -135,12 +135,11 @@ void moveCursorToCell(unsigned char x, unsigned char y) {
 
 // == startNewGame() ==
 void startNewGame(void) {
-	unsigned int seed = clock();
 	unsigned char i;
 	unsigned char card;
 	unsigned char col, row;
-
-	seedrandom(seed);
+	
+	seedrandom(clock());
 	shuffleDeck();
 	
 	// Clear out tableau and cells
@@ -155,33 +154,23 @@ void startNewGame(void) {
 		cardsBeingMoved[i] = 255;
 	}
 	
-	// Clear drawing list
-	for (i=0; i<9 * MaxColumnHeight; ++i) {
-		invalidCell[i] = 255;
-	}
-
-	// Draw entire screen
+	// Erase entire screen and draw the placeholder row
 	waitvsync();
 	setScreenVisible(0);
-	drawPlaceholderRow();
-
-	// Place and draw cards into columns at the same time.
+	updateScreenForNewGame();
+	setCardSprite(0, 0, 0);
+	refreshScreen();
+	
+	// Place and draw cards into columns at the same time, showing each card one frame at a time.
 	for (i=0; i<40; ++i) {
 		col = i % 8;
 		row = i / 8;
 		card = deck[i];
 		columnCard[col * MaxColumnHeight + row] = card;
-		drawCard (card, 3 * col + ColumnsOffsetX, 2 * row + ColumnsOffsetY);
+		drawCardAtCell (card, col + 1, row + 2);
+		refreshScreen();
 	}
 	
-	// Erase rows below columns
-	eraseRect(4, 18, 24, 10);
-	
-	refreshAttributeTable();
-	setCardSprite(0, 0, 0);
-	resetScrollPosition();
-	waitvsync();
-	setScreenVisible(1);
 }
 
 

@@ -13,9 +13,10 @@
 const unsigned char PointerSprite_Tile[] = { 0xEE, 0xEF, 0xFE, 0xFF };
 
 // Global variables
+unsigned char vramUpdates[255];
+unsigned char vramUpdateIndex = 0;
+unsigned char attributeTableShadow[64]; // Copy of the attribute table in the nametable for easier modifications.
 unsigned char *spriteAreaPtr = (unsigned char *)0x0200;
-unsigned char attributeShadow[64]; // Copy of the attribute table in the nametable for easier modifications.
-unsigned char attributeTableNeedsUpdate = 0;
 unsigned char debugValue1 = 0, debugValue2 = 0;
 
 // Extern
@@ -27,6 +28,7 @@ extern const unsigned char PlaceholderRowData[];
 extern const unsigned char PlaceholderRowDataSize;
 
 // Function Prototypes
+void updateVram(void);
 void drawTestPattern(void);
 void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles, unsigned char color);
 unsigned char hexChar(unsigned char value);
@@ -61,7 +63,7 @@ void initScreen(void) {
 	
 	// Clear Attribute shadow table
 	for (index8=0; index8<64; ++index8) {
-		attributeShadow[index8] = 0;
+		attributeTableShadow[index8] = 0;
 	}
 
 	// Load the palette
@@ -72,11 +74,10 @@ void initScreen(void) {
 	}
 	
 	// Draw screen
-	drawPlaceholderRow();
+	updateScreenForNewGame();
 	drawString("PRESS START", 10, 11);
 		
 	// Finalize and turn screen on
-	refreshAttributeTable();
 	resetScrollPosition();
 	setScreenVisible(1);
 }
@@ -85,14 +86,46 @@ void initScreen(void) {
 void refreshScreen(void) {
 	waitvsync();
 	setScreenVisible(0);
-	drawInvalidCells(); 
-	if (attributeTableNeedsUpdate != 0) {
-		refreshAttributeTable();
-	} else {
-		drawHexByte(debugValue1, 0, 24); // debugging
-		//drawHexByte(debugValue2, 3, 24); 
+	if (vramUpdateIndex > 0) {
+		updateVram();
 	}
 	refreshOAM(); // also resets scroll position
+}
+
+// == updateVram() ==
+void updateVram(void) {
+	// Internal format of an update: 
+	// address: 2 bytes
+	// length: 1 byte
+	// data: number of bytes according to length
+	unsigned char index = 0;
+	unsigned char remain;
+	while (index < vramUpdateIndex) {
+		PPU.vram.address = vramUpdates[index];
+		PPU.vram.address = vramUpdates[++index];
+		remain = vramUpdates[++index];
+		while (remain > 0) {
+			PPU.vram.data = vramUpdates[++index];
+			--remain;
+		}
+		++index;
+	}
+	vramUpdateIndex = 0; // Reset to zero
+}
+
+// == updateVram() ==
+void addVramUpdate(unsigned int address, unsigned char length, const unsigned char *data) {
+	unsigned char i = 0;
+	if (vramUpdateIndex <= 252 - length) { // Check for enough space in vramUpdates buffer to store data
+		vramUpdates[vramUpdateIndex] = (address >> 8);
+		vramUpdates[++vramUpdateIndex] = (address & 0xFF);
+		vramUpdates[++vramUpdateIndex] = length;
+		while (i < length) {
+			vramUpdates[++vramUpdateIndex] = data[i];
+			++i;
+		}
+		++vramUpdateIndex;
+	}
 }
 
 // == setScreenVisible() ==
@@ -114,9 +147,11 @@ void resetScrollPosition(void) {
 void refreshOAM(void) {
 	PPU.sprite.address = 0;
 	APU.sprite.dma = 2;
+	PPU.vram.address = 0;
+	PPU.vram.address = 0;
+	PPU.scroll = 0;
+	PPU.scroll = 0;
 	setScreenVisible(1);
-	PPU.scroll = 0;
-	PPU.scroll = 0;
 }
 
 // == setColorAttribute() ==
@@ -131,25 +166,12 @@ void setColorAttribute(unsigned char color, unsigned char x, unsigned char y) {
 	color = (color << shift);
 	mask = (mask << shift);
 	
-	value = attributeShadow[offset];
+	value = attributeTableShadow[offset];
 	value = value & (~mask);
 	value = value | (color & mask);
-	attributeShadow[offset] = value;
+	attributeTableShadow[offset] = value;
 	
-	attributeTableNeedsUpdate = 1;
-}
-
-// == refreshAttributeTable() ==
-void refreshAttributeTable(void) {
-	unsigned char i;
-	
-	// Load the palette
-	PPU.vram.address = 0x23;
-	PPU.vram.address = 0xC0;
-	for (i=0; i<64; ++i) {
-		PPU.vram.data = attributeShadow[i];
-	}
-	attributeTableNeedsUpdate = 0;
+	addVramUpdate(AttributeTableAddress + offset, 1, &attributeTableShadow[offset]);
 }
 
 // == movePointerTo() ==
@@ -292,38 +314,22 @@ void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles
 	unsigned int address = 0x2000 + y * 32 + x;
 
 	if (address < AttributeTableAddress) {
-		PPU.vram.address = (address >> 8);
-		PPU.vram.address = (address & 0xFF);
-		PPU.vram.data = *tiles;
-		PPU.vram.data = *(++tiles);
-		PPU.vram.data = *(++tiles); 
+		addVramUpdate(address, 3, tiles);
 	}
 	
 	address += 32; // next line
 	if (address < AttributeTableAddress) {
-		PPU.vram.address = (address >> 8);
-		PPU.vram.address = (address & 0xFF);
-		PPU.vram.data = *(++tiles); 
-		PPU.vram.data = *(++tiles); 
-		PPU.vram.data = *(++tiles); 
+		addVramUpdate(address, 3, tiles + 3);
 	}
 
 	address += 32; // next line
 	if (address < AttributeTableAddress) {
-		PPU.vram.address = (address >> 8);
-		PPU.vram.address = (address & 0xFF);
-		PPU.vram.data = *(++tiles); 
-		PPU.vram.data = *(++tiles); 
-		PPU.vram.data = *(++tiles); 
+		addVramUpdate(address, 3, tiles + 6);
 	}
 
 	address += 32; // next line
 	if (address < AttributeTableAddress) {
-		PPU.vram.address = (address >> 8);
-		PPU.vram.address = (address & 0xFF);
-		PPU.vram.data = *(++tiles); 
-		PPU.vram.data = *(++tiles); 
-		PPU.vram.data = *(++tiles); 
+		addVramUpdate(address, 3, tiles + 9);
 	}
 
 	// Update the attribute table
@@ -334,35 +340,43 @@ void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles
 	}
 }
 
-// == drawPlaceholderRow() ==
-void drawPlaceholderRow(void) {
-	unsigned char i;
+// == eraseHalfCardArea() ==
+void eraseHalfCardArea (unsigned char x, unsigned char y) {
+	unsigned char blanks[3] = { 0x20, 0x20, 0x20 }; // ASCII space char
+	unsigned int address = 0x2000 + y * 32 + x;
+	unsigned char row;
+
+	for (row=0; row<2; ++row) {
+		addVramUpdate(address, 3, blanks);
+		address += 32; // next line
+	}
+}
+
+// == updateScreenForNewGame() ==
+void updateScreenForNewGame(void) {
+	unsigned int index16;
+	unsigned char index8;
 	
 	// Set nametable cells
 	PPU.vram.address = 0x20; // Start 2 lines down
 	PPU.vram.address = 0x40;
-	for (i=0; i<PlaceholderRowDataSize; ++i) {
-		PPU.vram.data = PlaceholderRowData[i];
+	for (index8=0; index8<PlaceholderRowDataSize; ++index8) {
+		PPU.vram.data = PlaceholderRowData[index8];
 	}
 	
-	// Set attribute cells
-	for (i=0; i<16; ++i) {
-		attributeShadow[i] = 0xAA;
+	// Erase the remaining space.
+	PPU.vram.address = 0x20; // Start 6 lines down
+	PPU.vram.address = 0xC0;
+	for (index16=0; index16<768; ++index16) {
+		PPU.vram.data = 0x20;
 	}
-}
-
-// == eraseRect() ==
-void eraseRect (unsigned char x, unsigned char y, unsigned char width, unsigned char height) {
-	unsigned int address = 0x2000 + y * 32 + x;
-	unsigned char i, j;
-
-	for (i=0; i<height; ++i) {
-		PPU.vram.address = (address >> 8);
-		PPU.vram.address = (address & 0xFF);
-		for (j=0; j<width; ++j) {
-			PPU.vram.data = 0x20; // Use ASCII space character to erase
-		}
-		address += 32; // next line
+	
+	// Fill attribute cells with color 2 (binary 10).
+	PPU.vram.address = 0x23;
+	PPU.vram.address = 0xC0;
+	for (index8=0; index8<64; ++index8) {
+		attributeTableShadow[index8] = 0xAA;
+		PPU.vram.data = 0xAA;
 	}
 }
 
@@ -420,11 +434,11 @@ void stringWithByte(unsigned char byte, char outString[]) {
 // == drawHexByte() ==
 void drawHexByte (unsigned char byte, unsigned char x, unsigned char y) {
 	unsigned int address = 0x2000 + y * 32 + x;
+	unsigned char text[2];
 	
-	PPU.vram.address = (address >> 8);
-	PPU.vram.address = (address & 0xFF);
-	PPU.vram.data = hexChar(byte >> 4);
-	PPU.vram.data = hexChar(byte);
+	text[0] = hexChar(byte >> 4);;
+	text[1] = hexChar(byte);
+	addVramUpdate(address, 2, text);
 }
 
 // == hexChar() ==
