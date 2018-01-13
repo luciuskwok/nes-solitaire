@@ -2,7 +2,7 @@
 
 /* Build commands:
 
-/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c sound.c cards.c data.s util.s -o test.nes
+/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c sound.c cards.c data.s util.s famitone2.s -o test.nes
 open test.nes
 
 */
@@ -11,6 +11,7 @@ open test.nes
 //#include <peekpoke.h>
 #include "screen.h"
 #include "cards.h"
+#include "famitone2.h"
 #include "util.h"
 #include "constants.h"
 #include <nes.h>
@@ -34,14 +35,17 @@ void main (void) {
 	unsigned char previousJoypad = 0;
 	unsigned char padTimer = 0;
 	unsigned char padChanged;
-	
+
 	initScreen();
+// 	initFamiTone();
+// 	FamiToneMusicPlay(0);
 	
 	// Enable sound
 	APU.status = 0x0F; // enable pulse, triangle, and noise channels.
 
 	// Wait for start button or any other button.
 	while ((joypad & 0xF0) == 0) {
+		refreshScreen();
 		joypad = readJoypad();
 	}
 	

@@ -6,6 +6,8 @@
 ; void __fastcall__ seedrandom(unsigned int);
 ; void __fastcall__ updateVramFast(void);
 
+FAMITONE_ENABLE = 0 	; set to 1 to use FamiTone
+
 ; Zero-page globals
 .zeropage
 rngseed: .res 2
@@ -18,6 +20,7 @@ rngseed: .res 2
 
 .import _vramUpdates
 .import _vramUpdateIndex
+.import _get_tv
 
 ; PPU registers
 PPUADDR = $2006
@@ -98,5 +101,37 @@ moreData:
 	sta _vramUpdateIndex		; reset vramUpdateIndex to zero
 	rts
 .endproc
+
+
+; ====== FamiTone Section ======
+.if(FAMITONE_ENABLE) 
+.export _initFamiTone
+.export _initFamiToneSfx
+.import _FamiToneInit
+.import _FamiToneMusicData
+.import _FamiToneSfxInit
+.import _FamiToneSfxData
+
+; ==== initFamiTone() ====
+.proc _initFamiTone
+	jsr _get_tv		; returns 0 for NTSC, 1 for PAL
+	eor #1			; but FamiTone expects 0 for PAL, so flip it
+	ldx #<_FamiToneMusicData	; low-byte
+	ldy #>_FamiToneMusicData	; high-byte
+	jsr _FamiToneInit
+	rts
+.endproc
+
+; ==== initFamiToneSfx () ====
+.proc _initFamiToneSfx
+	ldy #<_FamiToneSfxData		; low-byte
+	ldy #>_FamiToneSfxData		; high-byte
+	jsr _FamiToneSfxInit
+	rts
+.endproc
+
+.endif
+; ====== End FamiTone Section ======
+
 
 

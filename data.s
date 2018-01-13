@@ -82,6 +82,16 @@ _PlaceholderRowData:
 _PlaceholderRowDataSize:
 	.byte * - _PlaceholderRowData
 
+
+; FamiTone Music Data
+.export _FamiToneMusicData
+_FamiToneMusicData:
+;	.include "danger_streets.s"
+	
+; FamiTone Sfx Data
+.export _FamiToneSfxData
+_FamiToneSfxData:
+	.byte $00				; replace with actual data
 	
 .segment "FONT"
 	.incbin  "font.chr"		; custom font

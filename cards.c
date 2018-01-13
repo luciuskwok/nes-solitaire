@@ -151,6 +151,7 @@ void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toF
 	// Place card at destination after animation finishes. 
 	foundationCard[toFou] = moveCard;
 	drawCardAtCell (moveCard, toFou + 6, 1);
+	refreshScreen();
 }
 
 // == pickUpCardsAtCursor() ==

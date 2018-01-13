@@ -1,16 +1,20 @@
 // screen.c
 
-#include <nes.h>
 #include "screen.h"
+#include "famitone2.h"
 #include "cards.h"
+#include "util.h"
 #include "constants.h"
-
+#include <nes.h>
 
 // Constants
 #define PointerSpriteIndex (1)
 #define CardSpriteIndex (5)
 #define AttributeTableAddress (0x23C0)
 const unsigned char PointerSprite_Tile[] = { 0xEE, 0xEF, 0xFE, 0xFF };
+const unsigned char PointerSprite_X[] = { 0, 8, 16, 0, 8, 16, 0, 8, 16, 0, 8, 16 }; // precalculated sprite positions for speed
+const unsigned char PointerSprite_Y[] = { 0, 0, 0, 8, 8, 8, 16, 16, 16, 24, 24, 24 };
+const unsigned char MoveNoiseEnvelope[9] = { 1, 3, 4, 5, 4, 3, 2, 1, 1 };
 
 // Global variables
 unsigned char vramUpdates[256];
@@ -26,9 +30,6 @@ extern const unsigned char FaceDownCardTileData[];
 extern const unsigned char PlaceholderTileData[];
 extern const unsigned char PlaceholderRowData[];
 extern const unsigned char PlaceholderRowDataSize;
-
-// Assembly Routines
-extern void __fastcall__ updateVramFast(void);
 
 // Function Prototypes
 void drawTestPattern(void);
@@ -114,6 +115,7 @@ void refreshScreen(void) {
 	PPU.mask = 0x00;
 	updateVramFast();
 	showScreen();
+// 	FamiToneUpdate(); // music
 }
 
 // == addVramUpdate() ==
@@ -188,10 +190,11 @@ void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
 		}
 	}
 	
+	--y; // Adjust for 1 scanline difference between sprite and background position
 	for (i=0; i<12; ++i) { // 3 wide by 4 high
 		sprite = (SpriteInfo *)(spriteAreaPtr + 4 * (i + CardSpriteIndex));
-		sprite->x = x + (i % 3) * 8;
-		sprite->y = y + (i / 3) * 8 - 1;
+		sprite->x = PointerSprite_X[i] + x;
+		sprite->y = PointerSprite_Y[i] + y;
 		sprite->tile = (cards != 0)? tile[i] : 0x20;
 		sprite->attributes = 0x01;
 	}
@@ -213,7 +216,6 @@ void animateCardSprite(unsigned char fromX, unsigned char fromY, unsigned char t
 	int dy = (int) toY - (int) fromY;
 	unsigned char i;
 	int x, y;
-	unsigned char volume;
 	unsigned char halfway = duration / 2;
 	SpriteInfo *sprite;
 	
@@ -226,15 +228,14 @@ void animateCardSprite(unsigned char fromX, unsigned char fromY, unsigned char t
 	
 	while (t <= duration) {
 		x = fromX + (dx * t / (int) duration);
-		y = fromY + (dy * t / (int) duration);
+		y = fromY + (dy * t / (int) duration) - 1;
 		for (i=0; i<12; ++i) { // 3 wide by 4 high
 			sprite = (SpriteInfo *)(spriteAreaPtr + 4 * (i + CardSpriteIndex));
-			sprite->x = x + (i % 3) * 8;
-			sprite->y = y + (i / 3) * 8 - 1;
+		sprite->x = PointerSprite_X[i] + x;
+		sprite->y = PointerSprite_Y[i] + y;
 		}
 		++t;
-		volume = (t < halfway)? (t * 9 / halfway) : ((duration - t) * 9 / halfway);
-		APU.noise.control = 0x30 | volume;
+		APU.noise.control = 0x30 | MoveNoiseEnvelope[t % 9];
 		APU.noise.len = 0xFF;
 		refreshScreen();
 	}
