@@ -5,6 +5,7 @@
 
 // Globals
 extern unsigned char debugValue1, debugValue2;
+extern unsigned char ppuControl;
 
 // Function prototypes
 void initScreen(void);

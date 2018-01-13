@@ -234,6 +234,9 @@ void startNewGame(void) {
 		cardsBeingMoved[i] = 255;
 	}
 	
+	// Switch to nametable 0
+	ppuControl = 0x80;
+	
 	// Erase entire screen and draw the placeholder row
 	waitvsync();
 	hideScreen();

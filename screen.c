@@ -22,17 +22,20 @@ unsigned char vramUpdateIndex = 0;
 unsigned char attributeTableShadow[64]; // Copy of the attribute table in the nametable for easier modifications.
 unsigned char *spriteAreaPtr = (unsigned char *)0x0200;
 unsigned char debugValue1 = 0, debugValue2 = 0;
+unsigned char ppuControl = 0x90; // enable NMI, use nametable 1
 
-// Extern
+// Symbols in data.s
 extern const unsigned char PaletteData[];
 extern const unsigned char PaletteDataSize;
 extern const unsigned char FaceDownCardTileData[];
 extern const unsigned char PlaceholderTileData[];
 extern const unsigned char PlaceholderRowData[];
 extern const unsigned char PlaceholderRowDataSize;
+extern const unsigned char TitleScreenTileData[];
+extern const unsigned int TitleScreenTileDataSize;
 
 // Function Prototypes
-void drawTestPattern(void);
+void drawTitle(void);
 void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles, unsigned char color);
 unsigned char hexChar(unsigned char value);
 
@@ -77,8 +80,8 @@ void initScreen(void) {
 	}
 	
 	// Draw screen
-	updateScreenForNewGame();
-	drawString("PRESS START", 10, 11);
+	drawTitle();
+	drawString("PRESS START", 10, 18);
 		
 	// Finalize and turn screen on
 	refreshScreen();
@@ -94,7 +97,7 @@ void hideScreen(void) {
 void showScreen(void) {
 	PPU.sprite.address = 0;
 	APU.sprite.dma = 2;
-	PPU.control =0x80; // enable NMI, use nametable 0
+	PPU.control =ppuControl; 
 	PPU.mask = 0x1E;  // turn on screen
 	PPU.vram.address = 0;
  	PPU.vram.address = 0;
@@ -373,14 +376,14 @@ void updateScreenForNewGame(void) {
 	}
 }
 
-// == drawTestPattern() ==
-void drawTestPattern(void) {
-	unsigned char i;
+// == drawTitle() ==
+void drawTitle(void) {
+	unsigned int i;
 	
-	PPU.vram.address = 0x20; // Start 6 lines down
-	PPU.vram.address = 0xC0;
-	for (i=0; i<128; ++i) {
-		PPU.vram.data = i;
+	PPU.vram.address = 0x20; // Start 4 lines down
+	PPU.vram.address = 0x80;
+	for (i=0; i<TitleScreenTileDataSize; ++i) {
+		PPU.vram.data = TitleScreenTileData[i];
 	}
 }
 
