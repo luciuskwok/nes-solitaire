@@ -20,6 +20,7 @@ const unsigned char MoveNoiseEnvelope[9] = { 1, 3, 4, 5, 4, 3, 2, 1, 1 };
 unsigned char vramUpdates[256];
 unsigned char vramUpdateIndex = 0;
 unsigned char attributeTableShadow[64]; // Copy of the attribute table in the nametable for easier modifications.
+unsigned char attributeDirtyTable[64]; // Keeps track of which bytes have been changed for vramUpdate.
 unsigned char *spriteAreaPtr = (unsigned char *)0x0200;
 unsigned char debugValue1 = 0, debugValue2 = 0;
 unsigned char ppuControl = 0x90; // enable NMI, use nametable 1
@@ -35,6 +36,7 @@ extern const unsigned char TitleScreenTileData[];
 extern const unsigned int TitleScreenTileDataSize;
 
 // Function Prototypes
+void flushColorAttributeChanges(void);
 void drawTitle(void);
 void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles, unsigned char color);
 unsigned char hexChar(unsigned char value);
@@ -70,6 +72,7 @@ void initScreen(void) {
 	// Clear Attribute shadow table
 	for (index8=0; index8<64; ++index8) {
 		attributeTableShadow[index8] = 0;
+		attributeDirtyTable[index8] = 0;
 	}
 
 	// Load the palette
@@ -113,7 +116,7 @@ void resetScrollPosition(void) {
 
 // == refreshScreen() ==
 void refreshScreen(void) {
-	// unsigned char lastVramUpdateIndex = vramUpdateIndex; // debug
+	unsigned char lastVramUpdateIndex = vramUpdateIndex; // debug
 	
 	waitvsync();
 	PPU.control = 0x00; // turn off screen
@@ -122,9 +125,9 @@ void refreshScreen(void) {
 	showScreen();
 // 	FamiToneUpdate(); // music
 
-// 	if (lastVramUpdateIndex > 15) {
-// 		drawHexByte(lastVramUpdateIndex, 0, 29);
-// 	}
+	if (lastVramUpdateIndex > 0x20) {
+		drawHexByte(lastVramUpdateIndex, 0, 29);
+	}
 }
 
 // == addVramUpdate() ==
@@ -162,8 +165,31 @@ void setColorAttribute(unsigned char color, unsigned char x, unsigned char y) {
 	value = value & (~mask);
 	value = value | (color & mask);
 	attributeTableShadow[offset] = value;
+	attributeDirtyTable[offset] = 1; // mark as dirty so that vram updates can ben coalesced
+}
+
+// == flushColorAttributeChanges() ==
+void flushColorAttributeChanges(void) {
+	unsigned char offset = 0;
+	unsigned char length = 0;
+	unsigned char start = 0;
 	
-	addVramUpdate(AttributeTableAddress + offset, 1, &attributeTableShadow[offset]);
+	while (offset < 64) {
+		if (attributeDirtyTable[offset] != 0) {
+			if (length == 0) { // Start of new run of dirtied bytes.
+				start = offset;
+			}
+			++length;
+			attributeDirtyTable[offset] = 0; // clear dirty byte
+		} else {
+			if (length != 0) { // End of run of dirtied bytes. 
+				addVramUpdate(AttributeTableAddress + start, length, &attributeTableShadow[start]);
+				start = 0;
+				length = 0;
+			}
+		}
+		++offset;
+	}
 }
 
 // == movePointerTo() ==
@@ -340,12 +366,15 @@ void placeCardTiles(unsigned char x, unsigned char y, const unsigned char *tiles
 		addVramUpdate(address, 3, tiles + 9);
 	}
 
-	// Update the attribute table
+	// Update the attribute table for both top and bottom half of cards
 	setColorAttribute(color, x, y);
+	setColorAttribute(color, x, y + 2);
 	if ((x % 2) == 1) { 
 		// For odd values of x, also set the color attribute of the suit tile, because it falls on a different megatile.
 		setColorAttribute(color, x + 1, y);
+		setColorAttribute(color, x + 1, y + 2);
 	}
+	flushColorAttributeChanges();
 }
 
 // == eraseHalfCardArea() ==
