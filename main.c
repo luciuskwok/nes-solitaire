@@ -194,7 +194,7 @@ void resumeGame(void) {
 	
 	// Erase text
 	for (i=0; i<6; ++i) {
-		drawString("            ", 10, 12+i);
+		drawString("            ", 10, 11+i);
 		refreshScreen();
 	}
 	

@@ -66,6 +66,9 @@ void autoMoveCards(void) {
 	
 	// Compare the foundation card to each card in freecells and columns
 	for (fou=0; fou<3; ++fou) {
+		// Allow refresh to ensure PPU updates
+		refreshScreen();
+	
 		searchCard = foundationCard[fou];
 		if (searchCard < 40) {
 			if (searchCard % 9 != 8) { // For valid cards that are not the "9" card, set searchCard to the card we're looking for.
@@ -201,9 +204,9 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 	}
 	
 	if (validCard) {
-		playTriangle(Note_C4, 8);
 		// Update the card sprite with the card being moved.
 		setCardSprite(cardsBeingMoved, cardLocation & 0xFF, cardLocation >> 8);
+		playTriangle(Note_C4, 8);
 	} else {
 		// No valid card to select
 	}
@@ -304,10 +307,7 @@ void dropCardsAtCursor(unsigned char curX, unsigned char curY) {
 				columnCard[col * MaxColumnHeight + height + i] = moveCard;
 				cardsBeingMoved[i] = 255;
 				drawCardAtCell(moveCard, col + 1, height + i + 2);
-				
-				if (i % 2 == 1) {
-					refreshScreen();
-				}
+				refreshScreen();
 			}
 			destinationX = col + 1;
 			destinationY = height + 2;
@@ -438,6 +438,7 @@ void returnCardsToOrigin(void) {
 			columnCard[col * MaxColumnHeight + row + i] = moveCard;
 			cardsBeingMoved[i] = 255;
 			drawCardAtCell (moveCard, originatingCellX, originatingCellY + i);
+			refreshScreen();
 			++i;
 		}
 	}
@@ -564,6 +565,7 @@ void drawColumnBottom(unsigned char col, unsigned char blankRows) {
 	}
 
 	for (i=0; i<blankRows; ++i) {
+		refreshScreen();
 		eraseHalfCardArea(tileX, tileY);
 		tileY += 2;
 	}

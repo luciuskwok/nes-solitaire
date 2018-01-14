@@ -113,12 +113,18 @@ void resetScrollPosition(void) {
 
 // == refreshScreen() ==
 void refreshScreen(void) {
+	// unsigned char lastVramUpdateIndex = vramUpdateIndex; // debug
+	
 	waitvsync();
 	PPU.control = 0x00; // turn off screen
 	PPU.mask = 0x00;
 	updateVramFast();
 	showScreen();
 // 	FamiToneUpdate(); // music
+
+// 	if (lastVramUpdateIndex > 15) {
+// 		drawHexByte(lastVramUpdateIndex, 0, 29);
+// 	}
 }
 
 // == addVramUpdate() ==
@@ -180,7 +186,7 @@ void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
 	unsigned char topCard = cards[0];
 	unsigned char color = 0;
 	unsigned char i;
-	unsigned char tile[12];
+	unsigned char tile[12] = {0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20};
 	unsigned char palette[3];
 	SpriteInfo *sprite;
 	
@@ -198,7 +204,7 @@ void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
 		sprite = (SpriteInfo *)(spriteAreaPtr + 4 * (i + CardSpriteIndex));
 		sprite->x = PointerSprite_X[i] + x;
 		sprite->y = PointerSprite_Y[i] + y;
-		sprite->tile = (cards != 0)? tile[i] : 0x20;
+		sprite->tile = tile[i];
 		sprite->attributes = 0x01;
 	}
 	
