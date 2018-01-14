@@ -171,10 +171,7 @@ void startMenu(void) {
 			selectedMenuItem = (selectedMenuItem < 2)? selectedMenuItem : 2;
 			
 			// Buttons
-			if ((joypad & JoyStart) != 0) { // Start: cancel and return to game
-				resumeGame();
-				break;
-			} else if ((joypad & (JoyButtonB | JoyButtonA)) != 0) { // Make selection
+			if ((joypad & 0xF0) != 0) { // Make selection
 				if (selectedMenuItem == 1) {
 					startNewGame();
 					break;
