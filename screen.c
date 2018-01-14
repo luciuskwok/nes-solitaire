@@ -259,6 +259,8 @@ unsigned char getCardTilesAndColor (unsigned char card, unsigned char tiles[12])
 	unsigned char cardSuit = 0;
 	unsigned char cardValue;
 	unsigned char cardColor;
+	unsigned char upperCenterTile = 0xD2;
+	unsigned char lowerCenterTile = 0xD2;
 	
 	if (card < FirstSpecialCard) { // Normal rank cards.
 		cardValue = card % 9; 
@@ -267,9 +269,13 @@ unsigned char getCardTilesAndColor (unsigned char card, unsigned char tiles[12])
 	} else if (card < FlowerCard) { // "Honor" card
 		cardColor = (card - FirstSpecialCard) / 4; // There are 4 of each "Honor" card.
 		cardValue = 9 + cardColor;
+		upperCenterTile = 0x8A + cardColor;
+		lowerCenterTile = 0x9A + cardColor;
 	} else { // Flower card or Face-Down card.
 		cardColor = 1; 
 		cardValue = 12;
+		upperCenterTile = 0x8D;
+		lowerCenterTile = 0x9D;
 	}
 	
 	if (card < FaceDownCard) {
@@ -278,11 +284,11 @@ unsigned char getCardTilesAndColor (unsigned char card, unsigned char tiles[12])
 		tiles[2] = 0xC3;
 	
 		tiles[3] = 0xD1; 
-		tiles[4] = 0xD2; 
+		tiles[4] = upperCenterTile; 
 		tiles[5] = 0xD3; 
 
 		tiles[6] = 0xD1; 
-		tiles[7] = 0xD2; 
+		tiles[7] = lowerCenterTile; 
 		tiles[8] = 0xD3; 
 
 		tiles[9] = 0xE1; 

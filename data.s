@@ -32,7 +32,7 @@ _PlaceholderTileData:
 
 .export _PlaceholderRowData, _PlaceholderRowDataSize
 _PlaceholderRowData:
-	.word $0000, $0000
+	.word $0000, $0000				; row 0 
 	.repeat 3
 		.byte $C4, $C5, $C6
 	.endrepeat
@@ -44,31 +44,31 @@ _PlaceholderRowData:
 	.endrepeat
 	.word $0000, $0000
 	
-	.word $0000, $0000
+	.word $0000, $0000				; row 1
 	.repeat 3
 		.byte $D4, $20, $D6
 	.endrepeat
 	.word $0000
-	.byte $D4, $DA, $D6
+	.byte $D4, $8E, $D6
 	.byte $00
 	.repeat 3
 		.byte $D4, $20, $D6
 	.endrepeat
 	.word $0000, $0000
 	
-	.word $0000, $0000
+	.word $0000, $0000				; row 2
 	.repeat 3
 		.byte $D4, $20, $D6
 	.endrepeat
 	.word $0000
-	.byte $D4, $EA, $D6
+	.byte $D4, $9E, $D6
 	.byte $00
 	.repeat 3
 		.byte $D4, $20, $D6
 	.endrepeat
 	.word $0000, $0000
 	
-	.word $0000, $0000
+	.word $0000, $0000				; row 3
 	.repeat 3
 		.byte $E4, $E5, $E6
 	.endrepeat
