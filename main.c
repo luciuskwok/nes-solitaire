@@ -103,14 +103,15 @@ void runTitleLoop(void) {
 	
 	// Draw title screen
 	drawTitle();
+	refreshScreen();
 
 	// Wait for start button or any other button.
 	while ((joypad & 0xF0) == 0) {
-		refreshScreen();
 		
-		if (pressStartTimer == 0) {
-			drawString("PRESS_START", 10, 18);
-		} else {
+		if (pressStartTimer > 0) {
+			if (pressStartTimer == 1) {
+				drawString("PRESS_START", 10, 18);
+			}
 			--pressStartTimer;
 		}
 		
@@ -142,6 +143,7 @@ void runTitleLoop(void) {
 			--waveTimer;
 		}
 		
+		refreshScreen();
 		joypad = readJoypad();
 	}
 }
