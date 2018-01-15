@@ -24,7 +24,7 @@ void autoMoveCardFromColumnToFoundation(unsigned char fromCol, unsigned char toF
 void clearCardsBeingMoved(void);
 unsigned char numberOfCardsBeingMoved(void);
 unsigned char columnHeight(unsigned char col);
-unsigned char topMovableRowAtColumn(unsigned char col);
+void getColumnInfo(unsigned char col, unsigned char *outHeight, unsigned char *sequenceLength);
 
 unsigned char consolidateHonors(unsigned char moveCard, unsigned char curX, unsigned char curY);
 unsigned char isMatchingHonor(unsigned char card1, unsigned char card2);
@@ -77,11 +77,6 @@ void autoMoveCards(void) {
 		}
 	}
 	
-	// Debug
-	drawHexByte(searchCard[0] + 1, 3, 28);
-	drawHexByte(searchCard[1] - 8, 6, 28);
-	drawHexByte(searchCard[2] - 17, 9, 28);
-
 	// Check the freecells
 	// Ignore the FlowerCard, because it should auto-move from columns.
 	for (col=0; col<3; ++col) {
@@ -174,11 +169,11 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 	unsigned char index;
 	unsigned int cardLocation;
 	unsigned char colHeight;
-	unsigned char topMovableRow;
+	unsigned char sequenceLength, topMovableRow;
 	unsigned char *colPtr;
 
 	clearCardsBeingMoved();
-	//refreshScreen();
+	refreshScreen();
 	
 	if (curY == 1) { // Top row: only single card selection
 		if ((col < 3) && (freecellCard[col] < 40)) { // Can only pick up cards from freecells, not from foundations, and only if a card is there.
@@ -191,9 +186,10 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 			validCard = 1;
 		}
 	} else if (curY >= 2) { // Tableau 
-		colHeight = columnHeight(col);
+		getColumnInfo(col, &colHeight, &sequenceLength);
+		
 		if (colHeight > 0) {
-			topMovableRow = topMovableRowAtColumn(col);
+			topMovableRow = colHeight - sequenceLength;
 			
 			if (topMovableRow <= row && row < colHeight) {
 				// Move card from column to cards being moved
@@ -206,6 +202,7 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 				originatingCellY = row + 2;
 				cardLocation = locationWithCell(originatingCellX, originatingCellY);
 			
+				refreshScreen();
 				drawColumnBottom (col, colHeight - row);
 				validCard = 1;
 			}
@@ -498,30 +495,38 @@ unsigned char columnHeight(unsigned char col) {
 	return result;
 }
 
-// == topMovableRowAtColumn() ==
-unsigned char topMovableRowAtColumn(unsigned char col) {
+// == getColumnInfo() ==
+void getColumnInfo(unsigned char col, unsigned char *outHeight, unsigned char *sequenceLength) {
 	unsigned char *colPtr = columnCard + col * MaxColumnHeight;
-	signed char row = MaxColumnHeight - 1;
-	unsigned char lowerCard = 255;
+	unsigned char row = MaxColumnHeight - 1;
+	unsigned char previousCard = 255;
 	unsigned char card;
 	
-	while (row > 0) {
+	*outHeight = 0;
+	*sequenceLength = 0;
+	
+	while (row != 0) {
 		card = colPtr[row];
-		if ((card < 40) && (lowerCard < 40)) {
-			if ((card >= 27) || (lowerCard >= 27)) {
-				return row + 1; // Non-rank cards are not a valid sequence
+		if (card < 40) {
+			if (*outHeight == 0) { // Column Height
+				*outHeight = row + 1;
 			}
-			if (card / 9 == lowerCard / 9) {
-				return row + 1; // Matching suits are not a valid sequence
-			}
-			if ((card % 9) != (lowerCard % 9) + 1) {
-				return row + 1;
+			
+			if (previousCard >= 40) {
+				// First card, starting from bottom, is automatically part of the sequence.
+				*sequenceLength+= 1;
+			} else {
+				if ((card >= 27) || (card/9 == previousCard/9) || (card%9 != (previousCard%9) + 1)) {
+					return;
+				}
+				*sequenceLength+= 1;
 			}
 		}
+
+		previousCard = card;
 		--row;
-		lowerCard = card;
 	}
-	return 0;
+	*sequenceLength+= 1; // add top card on column to sequence
 }
 
 
