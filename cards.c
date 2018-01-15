@@ -505,7 +505,7 @@ void getColumnInfo(unsigned char col, unsigned char *outHeight, unsigned char *s
 	*outHeight = 0;
 	*sequenceLength = 0;
 	
-	while (row != 0) {
+	while (1) {
 		card = colPtr[row];
 		if (card < 40) {
 			if (*outHeight == 0) { // Column Height
@@ -522,11 +522,13 @@ void getColumnInfo(unsigned char col, unsigned char *outHeight, unsigned char *s
 				*sequenceLength+= 1;
 			}
 		}
-
+	
+		if (row == 0) {
+			break;
+		}
 		previousCard = card;
 		--row;
 	}
-	*sequenceLength+= 1; // add top card on column to sequence
 }
 
 
