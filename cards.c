@@ -48,69 +48,78 @@ void shuffleDeck(void) {
 
 // == autoMoveCards() ==
 void autoMoveCards(void) {
-	unsigned char highLimit = 255;
-	unsigned char searchCard, card;
+	unsigned char lowestRank = 9;
+	unsigned char card, rank;
 	unsigned char col, colHeight, fou;
-
-	// Find the lowest card in the foundations
+	unsigned char searchCard[3] = {0, 9, 18};
+	
+	// Set up searchCard[] and find the lowest card in the foundations.
 	for (fou=0; fou<3; ++fou) {
 		card = foundationCard[fou];
-		if (card >= 40) {
-			card =0;
-		} else {
-			card = card % 9;
+		rank = card % 9;
+		if (card < 40) { // Valid card on foundation
+			if (rank < 8) { // Exclude "9" cards (value 8).
+				searchCard[fou] = card + 1;
+			}
+			if (lowestRank > rank) { // Also, note the lowest rank card in all foundations.
+				lowestRank = rank;
+			}
+		} else { // Empty foundation
+			lowestRank = 0;
 		}
-		highLimit = (card < highLimit)? card : highLimit;
-	}
-	++highLimit; // Set highLimit to one more than the lowest card found.
+	}	
 	
-	// Compare the foundation card to each card in freecells and columns
+	// Remove searchCards above lowestRank + 1
+	++lowestRank;
 	for (fou=0; fou<3; ++fou) {
-		// Allow refresh to ensure PPU updates
-		refreshScreen();
+		if (searchCard[fou] % 9 > lowestRank) {
+			searchCard[fou] = 255;
+		}
+	}
 	
-		searchCard = foundationCard[fou];
-		if (searchCard < 40) {
-			if (searchCard % 9 != 8) { // For valid cards that are not the "9" card, set searchCard to the card we're looking for.
-				++searchCard;
+	// Debug
+	drawHexByte(searchCard[0] + 1, 3, 28);
+	drawHexByte(searchCard[1] - 8, 6, 28);
+	drawHexByte(searchCard[2] - 17, 9, 28);
+
+	// Check the freecells
+	// Ignore the FlowerCard, because it should auto-move from columns.
+	for (col=0; col<3; ++col) {
+		card = freecellCard[col];
+		if (card < 40) {
+			for (fou=0; fou<3; ++fou) {
+				if (card == searchCard[fou]) {
+					autoMoveCardFromColumnToFoundation(col + 8, fou);
+					autoMoveNextFrame = 1;
+					return; // Stop search and restart on next frame.
+				}
 			}
-		} else { // For empty foundations, look for the "1" card of the matching suit in order.
-			searchCard = fou * 9;
+		}
+	}
+
+	// Allow refresh to ensure PPU updates
+	refreshScreen();
+	
+	// Check the tableau columns
+	for (col=0; col<8; ++col) {
+		colHeight = columnHeight(col);
+		if (colHeight > 0) {
+			card = columnCard[col * MaxColumnHeight + colHeight - 1];
+			for (fou=0; fou<3; ++fou) {
+				if (card == FlowerCard) {
+					autoMoveCardFromColumnToFoundation(col, 3);
+					autoMoveNextFrame = 1;
+					return; // Stop search and restart on next frame.
+				} else if (card == searchCard[fou]) {
+					autoMoveCardFromColumnToFoundation(col, fou);
+					autoMoveNextFrame = 1;
+					return; // Stop search and restart on next frame.
+				} // end for (fou)
+			}
 		}
 		
-		if ((searchCard % 9) <= highLimit) {
-			// Check the freecells
-			for (col=0; col<3; ++col) {
-				card = freecellCard[col];
-				if (card < 40) {
-					if (card == FlowerCard) {
-						autoMoveCardFromColumnToFoundation(col + 8, 3);
-						autoMoveNextFrame = 1;
-					} else if (card == searchCard) {
-						autoMoveCardFromColumnToFoundation(col + 8, fou);
-						autoMoveNextFrame = 1;
-					}
-				}
-			}
-		
-			// Check the tableau columns
-			for (col=0; col<8; ++col) {
-				colHeight = columnHeight(col);
-				if (colHeight > 0) {
-					card = columnCard[col * MaxColumnHeight + colHeight - 1];
-					if (card == FlowerCard) {
-						autoMoveCardFromColumnToFoundation(col, 3);
-						autoMoveNextFrame = 1;
-					} else if (card == searchCard) {
-						autoMoveCardFromColumnToFoundation(col, fou);
-						autoMoveNextFrame = 1;
-					}
-				}
-			}
-			
-		} // end if (searchCard...)
-		
-	} // end for (fou...)
+		refreshScreen();
+	}
 }
 
 
@@ -169,6 +178,7 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 	unsigned char *colPtr;
 
 	clearCardsBeingMoved();
+	//refreshScreen();
 	
 	if (curY == 1) { // Top row: only single card selection
 		if ((col < 3) && (freecellCard[col] < 40)) { // Can only pick up cards from freecells, not from foundations, and only if a card is there.
@@ -203,10 +213,11 @@ void pickUpCardsAtCursor(unsigned char curX, unsigned char curY) {
 		
 	}
 	
+	
 	if (validCard) {
+		playTriangle(Note_C5, 8);
 		// Update the card sprite with the card being moved.
 		setCardSprite(cardsBeingMoved, cardLocation & 0xFF, cardLocation >> 8);
-		playTriangle(Note_C4, 8);
 	} else {
 		// No valid card to select
 	}

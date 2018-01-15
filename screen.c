@@ -125,8 +125,8 @@ void refreshScreen(void) {
 	showScreen();
 // 	FamiToneUpdate(); // music
 
-	if (lastVramUpdateIndex > 0x20) {
-		drawHexByte(lastVramUpdateIndex, 0, 29);
+	if (lastVramUpdateIndex > 0x1A) {
+		drawHexByte(lastVramUpdateIndex, 0, 28);
 	}
 }
 

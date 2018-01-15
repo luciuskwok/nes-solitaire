@@ -2,8 +2,8 @@
 
 /* Build commands:
 
-/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c sound.c cards.c data.s util.s famitone2.s -o test.nes
-open test.nes
+/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c sound.c cards.c data.s util.s famitone2.s -o "Shenzhen Solitaire.nes"
+open "Shenzhen Solitaire.nes"
 
 */
 
