@@ -13,3 +13,4 @@ extern const unsigned char TitleScreenTileData[];
 extern const unsigned int TitleScreenTileDataSize;
 extern const unsigned char TitleScreenPaletteData[];
 extern const unsigned char TitleScreenPaletteDataSize;
+extern const unsigned char  WaveTiles[];

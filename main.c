@@ -23,6 +23,8 @@ unsigned char cursorY= 6;
 unsigned char cursorDidMove = 1;
 
 // Function prototypes
+void runTitleLoop(void);
+void drawWave(signed char waveSize);
 void handleDPad(unsigned char joypad);
 void handleButtons(unsigned char joypad);
 void startMenu(void);
@@ -38,20 +40,15 @@ void main (void) {
 	unsigned char padChanged;
 
 	initScreen();
+	
 // 	initFamiTone();
 // 	FamiToneMusicPlay(0);
 	
 	// Enable sound
 	APU.status = 0x0F; // enable pulse, triangle, and noise channels.
 
-	// Wait for start button or any other button.
-	while ((joypad & 0xF0) == 0) {
-		refreshScreen();
-		joypad = readJoypad();
-	}
-	
-	// Switch to main color palette
-	setColorPalette(MainPaletteData, MainPaletteDataSize);
+	// Title Screen
+	runTitleLoop();
 
 	startNewGame();
 	
@@ -93,6 +90,66 @@ void main (void) {
 			--padTimer;
 		}
 	}
+}
+
+// -== runTitleLoop() ==
+void runTitleLoop(void) {
+	unsigned int pressStartTimer = 60 * 5;
+	unsigned int waveTimer = 60 * 2;
+	signed char waveDirection = -1;
+	signed char waveSize = 4;
+	signed char oldWaveSize = 4;
+	unsigned char joypad = 0;
+	
+	// Draw title screen
+	drawTitle();
+
+	// Wait for start button or any other button.
+	while ((joypad & 0xF0) == 0) {
+		refreshScreen();
+		
+		if (pressStartTimer == 0) {
+			drawString("PRESS_START", 10, 18);
+		} else {
+			--pressStartTimer;
+		}
+		
+		if (waveTimer == 0) {
+			if (waveDirection < 0) { // wave going out
+				--waveSize;
+				if (waveSize < 0) {
+					waveTimer = 60 * 3;
+					waveSize = 0;
+					waveDirection = 1;
+				} else {
+					waveTimer = 60;
+				}
+			} else { // wave coming in
+				++waveSize;
+				if (waveSize > 4) {
+					waveTimer = 60 * 2;
+					waveSize = 4;
+					waveDirection = -1;
+				} else {
+					waveTimer = 8;
+				}
+			}
+			if (waveSize != oldWaveSize) {
+				drawWave(waveSize);
+				oldWaveSize = waveSize;
+			}
+		} else {
+			--waveTimer;
+		}
+		
+		joypad = readJoypad();
+	}
+}
+
+// == drawWave() ==
+void drawWave(signed char waveSize) {
+	unsigned int address = 0x22D4;
+	addVramUpdate (address, 8, &WaveTiles[waveSize * 8]);
 }
 
 // == handleDPad() ==
@@ -234,13 +291,12 @@ void startNewGame(void) {
 	for (i=0; i<MaxColumnHeight; ++i) {
 		cardsBeingMoved[i] = 255;
 	}
-	
-	// Switch to nametable 0
-	ppuControl = 0x80;
-	
+
 	// Erase entire screen and draw the placeholder row
+	ppuControl = 0x80; // Switch to nametable 0
 	waitvsync();
 	hideScreen();
+	setColorPalette(MainPaletteData, MainPaletteDataSize);
 	updateScreenForNewGame();
 	setCardSprite(0, 0, 0);
 	showScreen();

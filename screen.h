@@ -32,6 +32,7 @@ void eraseHalfCardArea (unsigned char x, unsigned char y);
 void updateScreenForNewGame(void);
 
 void drawButton(const char *title, unsigned char x, unsigned char y, unsigned char width);
+void drawTitle(void);
 void drawString(const char *string, unsigned char x, unsigned char y);
 void stringWithByte(unsigned char byte, char outString[]);
 void drawHexByte (unsigned char byte, unsigned char x, unsigned char y);

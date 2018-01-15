@@ -65,13 +65,6 @@ void initScreen(void) {
 		attributeTableShadow[index8] = 0;
 		attributeDirtyTable[index8] = 0;
 	}
-
-	// Draw screen
-	drawTitle();
-	drawString("PRESS_START", 10, 20);
-		
-	// Finalize and turn screen on
-	refreshScreen();
 }
 
 // == hideScreen() ==

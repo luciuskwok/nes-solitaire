@@ -8,7 +8,7 @@ _MainPaletteData:
 	.byte	$0a, $26, $16, $30
 	.byte	$0a, $2a, $1a, $30 
 	.byte	$0a, $31, $01, $30
-	.byte	$0a, $3d, $0f, $30		; Sprite
+	.byte	$0a, $3d, $14, $30		; Sprite
 	.byte	$0a, $00, $00, $31
 	.byte	$00, $00, $00, $00
 	.byte	$00, $00, $00, $00
@@ -94,13 +94,23 @@ _TitleScreenTileDataSize:
 ; Title Screen Color Palette
 .export _TitleScreenPaletteData, _TitleScreenPaletteDataSize
 _TitleScreenPaletteData:
-	.byte	$0f, $26, $27, $36 		; Background
+	.byte	$0f, $26, $27, $30 		; Background
 	.byte	$0f, $16, $06, $24
 	.byte	$0f, $11, $37, $30 
 	.byte	$0f, $26, $16, $24
 _TitleScreenPaletteDataSize: 
 	.byte * - _TitleScreenPaletteData
 
+
+; Wave Tiles
+.export _WaveTiles
+_WaveTiles:
+	.byte $00, $00, $00, $00, $00, $00, $00, $00
+	.byte $00, $00, $00, $c9, $d0, $00, $00, $00
+	.byte $00, $00, $c9, $ca, $cf, $d0, $00, $00
+	.byte $00, $c9, $ca, $cb, $ce, $cf, $d0, $00
+	.byte $c9, $ca, $cb, $cc, $cd, $ce, $cf, $d0
+	
 
 .segment "FONT"
 	.incbin  "font.chr"		; custom font
