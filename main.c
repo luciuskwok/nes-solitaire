@@ -2,7 +2,7 @@
 
 /* Build commands:
 
-/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c sound.c cards.c data.s util.s famitone2.s -o "Shenzhen Solitaire.nes"
+/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c sound.c cards.c data.s util.s -o "Shenzhen Solitaire.nes"
 open "Shenzhen Solitaire.nes"
 
 */
@@ -13,6 +13,7 @@ open "Shenzhen Solitaire.nes"
 #include "cards.h"
 #include "famitone2.h"
 #include "util.h"
+#include "data.h"
 #include "constants.h"
 #include <nes.h>
 
@@ -49,6 +50,9 @@ void main (void) {
 		joypad = readJoypad();
 	}
 	
+	// Switch to main color palette
+	setColorPalette(MainPaletteData, MainPaletteDataSize);
+
 	startNewGame();
 	
 	while (1) {

@@ -4,6 +4,7 @@
 #include "famitone2.h"
 #include "cards.h"
 #include "util.h"
+#include "data.h"
 #include "constants.h"
 #include <nes.h>
 
@@ -24,16 +25,6 @@ unsigned char attributeDirtyTable[64]; // Keeps track of which bytes have been c
 unsigned char *spriteAreaPtr = (unsigned char *)0x0200;
 unsigned char debugValue1 = 0, debugValue2 = 0;
 unsigned char ppuControl = 0x90; // enable NMI, use nametable 1
-
-// Symbols in data.s
-extern const unsigned char PaletteData[];
-extern const unsigned char PaletteDataSize;
-extern const unsigned char FaceDownCardTileData[];
-extern const unsigned char PlaceholderTileData[];
-extern const unsigned char PlaceholderRowData[];
-extern const unsigned char PlaceholderRowDataSize;
-extern const unsigned char TitleScreenTileData[];
-extern const unsigned int TitleScreenTileDataSize;
 
 // Function Prototypes
 void flushColorAttributeChanges(void);
@@ -75,16 +66,9 @@ void initScreen(void) {
 		attributeDirtyTable[index8] = 0;
 	}
 
-	// Load the palette
-	PPU.vram.address = 0x3F;
-	PPU.vram.address = 0x00;
-	for (index8=0; index8<PaletteDataSize; ++index8) {
-		PPU.vram.data = PaletteData[index8];
-	}
-	
 	// Draw screen
 	drawTitle();
-	drawString("PRESS START", 10, 18);
+	drawString("PRESS_START", 10, 20);
 		
 	// Finalize and turn screen on
 	refreshScreen();
@@ -116,7 +100,7 @@ void resetScrollPosition(void) {
 
 // == refreshScreen() ==
 void refreshScreen(void) {
-	unsigned char lastVramUpdateIndex = vramUpdateIndex; // debug
+// 	unsigned char lastVramUpdateIndex = vramUpdateIndex; // debug
 	
 	waitvsync();
 	PPU.control = 0x00; // turn off screen
@@ -125,9 +109,9 @@ void refreshScreen(void) {
 	showScreen();
 // 	FamiToneUpdate(); // music
 
-	if (lastVramUpdateIndex > 0x1A) {
-		drawHexByte(lastVramUpdateIndex, 0, 28);
-	}
+// 	if (lastVramUpdateIndex > 0x1A) {
+// 		drawHexByte(lastVramUpdateIndex, 0, 28);
+// 	}
 }
 
 // == addVramUpdate() ==
@@ -146,6 +130,16 @@ void addVramUpdate(unsigned int address, unsigned char length, const unsigned ch
 			++i;
 		}
 		++vramUpdateIndex;
+	}
+}
+
+// == setColorPalette() ==
+void setColorPalette(const unsigned char *palette, const unsigned char length) {
+	unsigned char i;
+	PPU.vram.address = 0x3F;
+	PPU.vram.address = 0x00;
+	for (i=0; i<length; ++i) {
+		PPU.vram.data = palette[i];
 	}
 }
 
@@ -237,8 +231,8 @@ void setCardSprite(unsigned char *cards, unsigned char x, unsigned char y) {
 	// Set sprite color
 	if (cards != 0) {
 		i = color * 4;
-		palette[0] = PaletteData[++i];
-		palette[1] = PaletteData[++i];
+		palette[0] = MainPaletteData[++i];
+		palette[1] = MainPaletteData[++i];
 		palette[2] = 0x31; // light blue
 		addVramUpdate(0x3F15, 3, palette);
 	}
@@ -421,11 +415,15 @@ void updateScreenForNewGame(void) {
 void drawTitle(void) {
 	unsigned int i;
 	
-	PPU.vram.address = 0x20; // Start 4 lines down
-	PPU.vram.address = 0x80;
+	// Nametable (tiles)
+	PPU.vram.address = 0x20;
+	PPU.vram.address = 0x00;
 	for (i=0; i<TitleScreenTileDataSize; ++i) {
 		PPU.vram.data = TitleScreenTileData[i];
 	}
+	
+	// Palette
+	setColorPalette(TitleScreenPaletteData, TitleScreenPaletteDataSize);
 }
 
 unsigned char stringLength(const char *string) {

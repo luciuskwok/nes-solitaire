@@ -17,6 +17,7 @@ void resetScrollPosition(void);
 void refreshScreen(void);
 void addVramUpdate(unsigned int address, unsigned char length, const unsigned char *data);
 
+void setColorPalette(const unsigned char *palette, const unsigned char length);
 void setColorAttribute(unsigned char color, unsigned char x, unsigned char y);
 
 void movePointerTo(unsigned char x, unsigned char y);
