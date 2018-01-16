@@ -86,7 +86,7 @@ void autoMoveCards(void) {
 				if (card == searchCard[fou]) {
 					autoMoveCardFromColumnToFoundation(col + 8, fou);
 					autoMoveNextFrame = 1;
-					return; // Stop search and restart on next frame.
+					break; 
 				}
 			}
 		}
@@ -104,11 +104,11 @@ void autoMoveCards(void) {
 				if (card == FlowerCard) {
 					autoMoveCardFromColumnToFoundation(col, 3);
 					autoMoveNextFrame = 1;
-					return; // Stop search and restart on next frame.
+					break; 
 				} else if (card == searchCard[fou]) {
 					autoMoveCardFromColumnToFoundation(col, fou);
 					autoMoveNextFrame = 1;
-					return; // Stop search and restart on next frame.
+					break; 
 				} // end for (fou)
 			}
 		}
