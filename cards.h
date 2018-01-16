@@ -14,6 +14,7 @@ extern unsigned char autoMoveNextFrame;
 
 // Functions
 void shuffleDeck(void);
+unsigned char isGameOver(void);
 void autoMoveCards(void);
 
 void pickUpCardsAtCursor(unsigned char curX, unsigned char curY);

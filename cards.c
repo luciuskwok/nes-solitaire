@@ -45,6 +45,16 @@ void shuffleDeck(void) {
 	}
 }
 
+// == isGameOver() ==
+unsigned char isGameOver(void) {
+	unsigned char col;
+	for (col=0; col<8; ++col) {
+		if (columnCard[col * MaxColumnHeight] < 40) {
+			return 0;
+		}
+	}
+	return 1;
+}
 
 // == autoMoveCards() ==
 void autoMoveCards(void) {

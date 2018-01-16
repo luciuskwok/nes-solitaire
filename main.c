@@ -50,44 +50,55 @@ void main (void) {
 	// Title Screen
 	runTitleLoop();
 
-	startNewGame();
-	
 	while (1) {
-		refreshScreen();
+		startNewGame();
+	
+		while (isGameOver() == 0) {
+			refreshScreen();
 		
-		if (cursorDidMove) {
-			cursorDidMove = 0;
-			moveCursorToCell(cursorX, cursorY);
-		}
+			if (cursorDidMove) {
+				cursorDidMove = 0;
+				moveCursorToCell(cursorX, cursorY);
+			}
 		
-		if (autoMoveNextFrame) {
-			autoMoveNextFrame = 0;
-			autoMoveCards();
-		}
+			if (autoMoveNextFrame) {
+				autoMoveNextFrame = 0;
+				autoMoveCards();
+			}
 		
-		// Update joypad and move sprite position. Actual move will happen after next VBL.
-		joypad = readJoypad();
-		padChanged = (joypad != previousJoypad)? 1 : 0;
-		previousJoypad = joypad;
+			// Update joypad and move sprite position. Actual move will happen after next VBL.
+			joypad = readJoypad();
+			padChanged = (joypad != previousJoypad)? 1 : 0;
+			previousJoypad = joypad;
 		
-		if ((padChanged != 0) || (padTimer == 0)) {
+			if ((padChanged != 0) || (padTimer == 0)) {
 			
-			if ((joypad & 0x0F) != 0) {
-				// Handle D-pad
-				// Repeat delay is different for initial and subsequent ones.
-				padTimer = padChanged? 20 : 7; 
-				handleDPad (joypad);
-			} else {
-				// Reset padTimer when D-pad is released
-				padTimer = 0;
-				if ((joypad & 0xF0) != 0 && padChanged && (autoMoveNextFrame == 0)) {
-					// Handle buttons only if D-pad isn't active, and with no repeat
-					handleButtons (joypad);
+				if ((joypad & 0x0F) != 0) {
+					// Handle D-pad
+					// Repeat delay is different for initial and subsequent ones.
+					padTimer = padChanged? 20 : 7; 
+					handleDPad (joypad);
+				} else {
+					// Reset padTimer when D-pad is released
+					padTimer = 0;
+					if ((joypad & 0xF0) != 0 && padChanged && (autoMoveNextFrame == 0)) {
+						// Handle buttons only if D-pad isn't active, and with no repeat
+						handleButtons (joypad);
+					}
 				}
 			}
+			if (padTimer != 0) {
+				--padTimer;
+			}
 		}
-		if (padTimer != 0) {
-			--padTimer;
+		
+		// Game Over
+		joypad = 0;
+		drawString("PRESS_START", 10, 17);
+		drawString("FOR_NEW_GAME", 10, 18);
+		while ((joypad & 0xF0) == 0) {
+			refreshScreen();
+			joypad = readJoypad();
 		}
 	}
 }
