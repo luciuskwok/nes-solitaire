@@ -2,8 +2,8 @@
 
 /* Build commands:
 
-/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c sound.c cards.c data.s util.s -o "Shenzhen Solitaire.nes"
-open "Shenzhen Solitaire.nes"
+/Applications/Emulators/cc65-master/bin/cl65 -O -t nes -C nes.cfg main.c screen.c sound.c cards.c data.s util.s -o "nes-solitaire.nes"
+open "nes-solitaire.nes"
 
 */
 
@@ -11,7 +11,7 @@ open "Shenzhen Solitaire.nes"
 //#include <peekpoke.h>
 #include "screen.h"
 #include "cards.h"
-#include "famitone2.h"
+//#include "famitone2.h"
 #include "util.h"
 #include "data.h"
 #include "constants.h"
